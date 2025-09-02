@@ -121,8 +121,7 @@
                     <div class="mr-4">
                         <p class="text-sm text-gray-500">إجمالي الإيداعات</p>
                         <p class="text-xl font-bold text-gray-900">
-                            {% load humanize %}
-                            {{ partners|dictsort:"deposits"|last.deposits|default:"0"|floatformat:2|intcomma }} ج.م
+                            {{ total_deposits|default:"0.00"|floatformat:2|intcomma }} ج.م
                         </p>
                     </div>
                 </div>
@@ -136,7 +135,7 @@
                     <div class="mr-4">
                         <p class="text-sm text-gray-500">إجمالي السحوبات</p>
                         <p class="text-xl font-bold text-gray-900">
-                            {{ partners|dictsort:"withdrawals"|last.withdrawals|default:"0"|floatformat:2|intcomma }} ج.م
+                            {{ total_withdrawals|default:"0.00"|floatformat:2|intcomma }} ج.م
                         </p>
                     </div>
                 </div>
@@ -150,7 +149,7 @@
                     <div class="mr-4">
                         <p class="text-sm text-gray-500">إجمالي الأرصدة</p>
                         <p class="text-xl font-bold text-gray-900">
-                            {{ total_shares|floatformat:2|intcomma }} ج.م
+                            {{ total_balance|default:"0.00"|floatformat:2|intcomma }} ج.م
                         </p>
                     </div>
                 </div>

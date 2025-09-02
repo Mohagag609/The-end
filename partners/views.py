@@ -16,15 +16,25 @@ def partners_list(request, project_id):
     total_shares = partners.aggregate(total=Sum('share_pct'))['total'] or Decimal('0.00')
     shares_valid = total_shares == Decimal('100.00')
     
+    total_deposits = Decimal('0.00')
+    total_withdrawals = Decimal('0.00')
+    total_balance = Decimal('0.00')
+    
     for partner in partners:
         partner.deposits = partner.get_total_receipts()
         partner.withdrawals = partner.get_total_payments()
+        total_deposits += partner.deposits
+        total_withdrawals += partner.withdrawals
+        total_balance += partner.wallet_balance
     
     context = {
         'project': project,
         'partners': partners,
         'total_shares': total_shares,
         'shares_valid': shares_valid,
+        'total_deposits': total_deposits,
+        'total_withdrawals': total_withdrawals,
+        'total_balance': total_balance,
     }
     
     return render(request, 'partners/list.html', context)
