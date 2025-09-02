@@ -4,9 +4,9 @@
 {% block title %}المحافظ - {{ project.name }}{% endblock %}
 
 {% block breadcrumb %}
-<a href="{% url 'dashboard:home' %}" class="text-gray-500 hover:text-gray-700">الرئيسية</a>
+<a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a>
 <span class="text-gray-400 mx-2">/</span>
-<a href="{% url 'dashboard:project_dashboard' project.id %}" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a>
+<a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a>
 <span class="text-gray-400 mx-2">/</span>
 <span class="text-gray-700 font-medium">المحافظ</span>
 {% endblock %}
@@ -21,17 +21,17 @@
                 <p class="text-sm text-gray-600 mt-1">أرصدة وحركات محافظ الشركاء</p>
             </div>
             <div class="flex space-x-reverse space-x-3">
-                <a href="{% url 'partners:create_receipt' project.id %}" 
+                <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
                    class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
                     <i class="fas fa-arrow-down ml-2"></i>
                     سند قبض
                 </a>
-                <a href="{% url 'partners:create_payment' project.id %}" 
+                <a href="/project/{{ project.id }}/partners/voucher/payment/" 
                    class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center">
                     <i class="fas fa-arrow-up ml-2"></i>
                     سند صرف
                 </a>
-                <a href="{% url 'partners:vouchers' project.id %}" 
+                <a href="/project/{{ project.id }}/partners/vouchers/" 
                    class="bg-white text-gray-700 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors flex items-center">
                     <i class="fas fa-list ml-2"></i>
                     كل السندات
@@ -218,7 +218,7 @@
         <div class="text-center py-12">
             <i class="fas fa-wallet text-gray-400 text-5xl mb-4"></i>
             <p class="text-gray-500">لا توجد محافظ حتى الآن</p>
-            <a href="{% url 'partners:add' project.id %}" 
+            <a href="/project/{{ project.id }}/partners/add/" 
                class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
                 <i class="fas fa-plus ml-2"></i>
                 إضافة شريك

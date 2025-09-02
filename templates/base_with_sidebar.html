@@ -147,7 +147,7 @@
                     <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">إدارة المشروع</h3>
                     
                     <!-- المراحل -->
-                    <a href="{% url 'projects:stages' project.id %}" 
+                    <a href="/project/{{ project.id }}/stages/" 
                        class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if 'stages' in request.path %}menu-item-active{% endif %}">
                         <i class="fas fa-layer-group text-indigo-600 w-6"></i>
                         <span class="mr-3 text-gray-700">المراحل</span>
@@ -164,19 +164,19 @@
                             <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="partners-menu-icon"></i>
                         </button>
                         <div id="partners-menu" class="submenu mr-8">
-                            <a href="{% url 'partners:list' project.id %}" 
+                            <a href="/project/{{ project.id }}/partners/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 قائمة الشركاء
                             </a>
-                            <a href="{% url 'partners:wallets' project.id %}" 
+                            <a href="/project/{{ project.id }}/partners/wallets/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 المحافظ
                             </a>
-                            <a href="{% url 'partners:create_receipt' project.id %}" 
+                            <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 سند قبض
                             </a>
-                            <a href="{% url 'partners:create_payment' project.id %}" 
+                            <a href="/project/{{ project.id }}/partners/voucher/payment/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 سند صرف
                             </a>
@@ -199,15 +199,15 @@
                             <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="purchases-menu-icon"></i>
                         </button>
                         <div id="purchases-menu" class="submenu mr-8">
-                            <a href="{% url 'purchases:list' project.id %}" 
+                            <a href="/project/{{ project.id }}/purchases/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 الفواتير
                             </a>
-                            <a href="{% url 'purchases:create' project.id %}" 
+                            <a href="/project/{{ project.id }}/purchases/create/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 فاتورة جديدة
                             </a>
-                            <a href="{% url 'suppliers:list' %}" 
+                            <a href="/suppliers/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 الموردين
                             </a>
@@ -225,11 +225,11 @@
                             <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="expenses-menu-icon"></i>
                         </button>
                         <div id="expenses-menu" class="submenu mr-8">
-                            <a href="{% url 'expenses:list' project.id %}" 
+                            <a href="/project/{{ project.id }}/expenses/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 قائمة المصروفات
                             </a>
-                            <a href="{% url 'expenses:create' project.id %}" 
+                            <a href="/project/{{ project.id }}/expenses/create/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 إضافة مصروف
                             </a>
@@ -237,7 +237,7 @@
                     </div>
                     
                     <!-- التسويات -->
-                    <a href="{% url 'settlements:list' project.id %}" 
+                    <a href="/project/{{ project.id }}/settlements/" 
                        class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if 'settlements' in request.path %}menu-item-active{% endif %}">
                         <i class="fas fa-balance-scale text-purple-600 w-6"></i>
                         <span class="mr-3 text-gray-700">التسويات</span>
@@ -258,15 +258,15 @@
                             <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="inventory-menu-icon"></i>
                         </button>
                         <div id="inventory-menu" class="submenu mr-8">
-                            <a href="{% url 'inventory:list' project.id %}" 
+                            <a href="/project/{{ project.id }}/inventory/movements/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 حركات المخزون
                             </a>
-                            <a href="{% url 'inventory:items' project.id %}" 
+                            <a href="/project/{{ project.id }}/inventory/items/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 الأصناف
                             </a>
-                            <a href="{% url 'inventory:issue' project.id %}" 
+                            <a href="/project/{{ project.id }}/inventory/issue/" 
                                class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
                                 صرف مواد
                             </a>
@@ -278,7 +278,7 @@
                 <div class="mb-6">
                     <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">التقارير والتحليلات</h3>
                     
-                    <a href="{% url 'reports:index' project.id %}" 
+                    <a href="/project/{{ project.id }}/reports/" 
                        class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if 'reports' in request.path %}menu-item-active{% endif %}">
                         <i class="fas fa-chart-bar text-teal-600 w-6"></i>
                         <span class="mr-3 text-gray-700">التقارير</span>
@@ -338,15 +338,15 @@
                             <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                                 <div class="py-2">
                                     {% if project %}
-                                    <a href="{% url 'partners:add' project.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <a href="/project/{{ project.id }}/partners/add/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-user-plus ml-2 text-blue-600"></i>
                                         إضافة شريك
                                     </a>
-                                    <a href="{% url 'expenses:create' project.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <a href="/project/{{ project.id }}/expenses/create/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-money-bill-wave ml-2 text-red-600"></i>
                                         إضافة مصروف
                                     </a>
-                                    <a href="{% url 'purchases:create' project.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                    <a href="/project/{{ project.id }}/purchases/create/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                         <i class="fas fa-file-invoice ml-2 text-purple-600"></i>
                                         فاتورة شراء
                                     </a>

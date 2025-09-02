@@ -6,7 +6,7 @@
 {% block breadcrumb %}
 <nav class="bg-white border-b px-4 py-3">
     <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
-        <li><a href="{% url 'dashboard:home' %}" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
         <li class="text-gray-500">/</li>
         <li class="text-gray-900 font-medium">{{ project.name }}</li>
     </ol>
@@ -24,37 +24,37 @@
                     إضافات سريعة
                 </h2>
                 <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-                    <a href="{% url 'partners:add' project.id %}" 
+                    <a href="/project/{{ project.id }}/partners/add/" 
                        class="bg-white rounded-lg p-3 hover:shadow-md transition-all text-center group">
                         <i class="fas fa-user-plus text-2xl text-blue-600 group-hover:scale-110 transition-transform"></i>
                         <p class="text-xs font-medium text-gray-700 mt-2">إضافة شريك</p>
                     </a>
                     
-                    <a href="{% url 'partners:create_receipt' project.id %}" 
+                    <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
                        class="bg-white rounded-lg p-3 hover:shadow-md transition-all text-center group">
                         <i class="fas fa-arrow-down text-2xl text-green-600 group-hover:scale-110 transition-transform"></i>
                         <p class="text-xs font-medium text-gray-700 mt-2">سند قبض</p>
                     </a>
                     
-                    <a href="{% url 'partners:create_payment' project.id %}" 
+                    <a href="/project/{{ project.id }}/partners/voucher/payment/" 
                        class="bg-white rounded-lg p-3 hover:shadow-md transition-all text-center group">
                         <i class="fas fa-arrow-up text-2xl text-red-600 group-hover:scale-110 transition-transform"></i>
                         <p class="text-xs font-medium text-gray-700 mt-2">سند صرف</p>
                     </a>
                     
-                    <a href="{% url 'purchases:create' project.id %}" 
+                    <a href="/project/{{ project.id }}/purchases/create/" 
                        class="bg-white rounded-lg p-3 hover:shadow-md transition-all text-center group">
                         <i class="fas fa-file-invoice text-2xl text-purple-600 group-hover:scale-110 transition-transform"></i>
                         <p class="text-xs font-medium text-gray-700 mt-2">فاتورة شراء</p>
                     </a>
                     
-                    <a href="{% url 'expenses:create' project.id %}" 
+                    <a href="/project/{{ project.id }}/expenses/create/" 
                        class="bg-white rounded-lg p-3 hover:shadow-md transition-all text-center group">
                         <i class="fas fa-money-bill-wave text-2xl text-red-600 group-hover:scale-110 transition-transform"></i>
                         <p class="text-xs font-medium text-gray-700 mt-2">مصروف</p>
                     </a>
                     
-                    <a href="{% url 'inventory:issue' project.id %}" 
+                    <a href="/project/{{ project.id }}/inventory/issue/" 
                        class="bg-white rounded-lg p-3 hover:shadow-md transition-all text-center group">
                         <i class="fas fa-box-open text-2xl text-orange-600 group-hover:scale-110 transition-transform"></i>
                         <p class="text-xs font-medium text-gray-700 mt-2">صرف مواد</p>
@@ -79,32 +79,32 @@
                     </div>
                     <div class="flex flex-wrap gap-2">
                         <!-- روابط سريعة للصفحات المهمة -->
-                        <a href="{% url 'projects:stages' project.id %}" 
+                        <a href="/project/{{ project.id }}/stages/" 
                            class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
                             <i class="fas fa-layer-group ml-2"></i>
                             المراحل
                         </a>
-                        <a href="{% url 'partners:wallets' project.id %}" 
+                        <a href="/project/{{ project.id }}/partners/wallets/" 
                            class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
                             <i class="fas fa-wallet ml-2"></i>
                             المحافظ
                         </a>
-                        <a href="{% url 'inventory:items' project.id %}" 
+                        <a href="/project/{{ project.id }}/inventory/items/" 
                            class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
                             <i class="fas fa-boxes ml-2"></i>
                             المواد
                         </a>
-                        <a href="{% url 'suppliers:list' %}" 
+                        <a href="/suppliers/" 
                            class="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700">
                             <i class="fas fa-truck ml-2"></i>
                             الموردين
                         </a>
-                        <a href="{% url 'reports:index' project.id %}" 
+                        <a href="/project/{{ project.id }}/reports/" 
                            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                             <i class="fas fa-chart-bar ml-2"></i>
                             التقارير
                         </a>
-                        <a href="{% url 'dashboard:kpis' project.id %}" 
+                        <a href="/project/{{ project.id }}/kpis/" 
                            class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                             <i class="fas fa-chart-line ml-2"></i>
                             المؤشرات
@@ -224,7 +224,7 @@
                                 <i class="fas fa-plus ml-1"></i>
                                 إضافة شريك
                             </button>
-                            <a href="{% url 'partners:list' project.id %}" 
+                            <a href="/project/{{ project.id }}/partners/" 
                                class="text-sm text-gray-600 hover:text-gray-900">
                                 عرض الكل
                             </a>
@@ -285,7 +285,7 @@
                                 <i class="fas fa-plus ml-1"></i>
                                 إضافة مرحلة
                             </button>
-                            <a href="{% url 'projects:stages' project.id %}" 
+                            <a href="/project/{{ project.id }}/stages/" 
                                class="text-sm text-gray-600 hover:text-gray-900">
                                 عرض الكل
                             </a>
@@ -466,7 +466,7 @@
 <script>
     function showAddPartnerModal() {
         // TODO: Implement modal
-        window.location.href = "{% url 'partners:add' project.id %}";
+        window.location.href = "/project/{{ project.id }}/partners/add/";
     }
     
     function showCreateStageModal() {
@@ -475,11 +475,11 @@
     }
     
     function createReceipt(partnerId) {
-        window.location.href = "{% url 'partners:create_receipt' project.id %}?partner=" + partnerId;
+        window.location.href = "/project/{{ project.id }}/partners/voucher/receipt/?partner=" + partnerId;
     }
     
     function createPayment(partnerId) {
-        window.location.href = "{% url 'partners:create_payment' project.id %}?partner=" + partnerId;
+        window.location.href = "/project/{{ project.id }}/partners/voucher/payment/?partner=" + partnerId;
     }
 </script>
 {% endblock %}

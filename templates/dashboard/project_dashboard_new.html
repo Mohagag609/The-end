@@ -126,7 +126,7 @@
                         <i class="fas fa-history ml-2 text-gray-400"></i>
                         آخر المصروفات
                     </h2>
-                    <a href="{% url 'expenses:list' project.id %}" class="text-sm text-primary-600 hover:text-primary-700">
+                    <a href="/project/{{ project.id }}/expenses/" class="text-sm text-primary-600 hover:text-primary-700">
                         عرض الكل
                         <i class="fas fa-arrow-left mr-1"></i>
                     </a>
@@ -167,7 +167,7 @@
                         <i class="fas fa-tasks ml-2 text-gray-400"></i>
                         المراحل
                     </h2>
-                    <a href="{% url 'projects:stages' project.id %}" class="text-sm text-primary-600 hover:text-primary-700">
+                    <a href="/project/{{ project.id }}/stages/" class="text-sm text-primary-600 hover:text-primary-700">
                         إدارة المراحل
                         <i class="fas fa-arrow-left mr-1"></i>
                     </a>
@@ -213,7 +213,7 @@
                         <i class="fas fa-users ml-2 text-gray-400"></i>
                         الشركاء
                     </h2>
-                    <a href="{% url 'partners:list' project.id %}" class="text-sm text-primary-600 hover:text-primary-700">
+                    <a href="/project/{{ project.id }}/partners/" class="text-sm text-primary-600 hover:text-primary-700">
                         عرض الكل
                     </a>
                 </div>
@@ -269,22 +269,22 @@
                 </div>
                 <div class="p-4">
                     <div class="grid grid-cols-2 gap-2">
-                        <a href="{% url 'expenses:create' project.id %}" 
+                        <a href="/project/{{ project.id }}/expenses/create/" 
                            class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
                             <i class="fas fa-plus text-red-600 mb-1"></i>
                             <p class="text-xs text-gray-700">مصروف</p>
                         </a>
-                        <a href="{% url 'partners:create_receipt' project.id %}" 
+                        <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
                            class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
                             <i class="fas fa-arrow-down text-green-600 mb-1"></i>
                             <p class="text-xs text-gray-700">إيداع</p>
                         </a>
-                        <a href="{% url 'purchases:create' project.id %}" 
+                        <a href="/project/{{ project.id }}/purchases/create/" 
                            class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
                             <i class="fas fa-file-invoice text-purple-600 mb-1"></i>
                             <p class="text-xs text-gray-700">فاتورة</p>
                         </a>
-                        <a href="{% url 'inventory:issue' project.id %}" 
+                        <a href="/project/{{ project.id }}/inventory/issue/" 
                            class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
                             <i class="fas fa-box-open text-orange-600 mb-1"></i>
                             <p class="text-xs text-gray-700">صرف مواد</p>
@@ -300,7 +300,7 @@
                         <i class="fas fa-exchange-alt ml-2 text-gray-400"></i>
                         آخر السندات
                     </h2>
-                    <a href="{% url 'partners:wallets' project.id %}" class="text-sm text-primary-600 hover:text-primary-700">
+                    <a href="/project/{{ project.id }}/partners/wallets/" class="text-sm text-primary-600 hover:text-primary-700">
                         المحافظ
                     </a>
                 </div>
