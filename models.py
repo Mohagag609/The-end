@@ -126,7 +126,9 @@ class Warehouse(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    code = db.Column(db.String(50))
     name = db.Column(db.String(200), nullable=False)
+    location = db.Column(db.String(200))
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships

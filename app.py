@@ -1091,6 +1091,40 @@ def project_item_new(project_id):
     flash('تم إضافة الصنف بنجاح', 'success')
     return redirect(url_for('project_suppliers', project_id=project_id))
 
+@app.route('/project/<int:project_id>/warehouse/new', methods=['POST'])
+def project_warehouse_new(project_id):
+    """إضافة مخزن جديد"""
+    name = request.form.get('name')
+    location = request.form.get('location', '')
+    
+    # Generate unique code
+    last_warehouse = Warehouse.query.filter_by(project_id=project_id).order_by(Warehouse.id.desc()).first()
+    if last_warehouse and last_warehouse.code:
+        # Extract number from last code
+        import re
+        match = re.search(r'\d+', last_warehouse.code)
+        if match:
+            next_num = int(match.group()) + 1
+        else:
+            next_num = 1
+    else:
+        next_num = 1
+    
+    code = f"WH{next_num:03d}"
+    
+    warehouse = Warehouse(
+        project_id=project_id,
+        code=code,
+        name=name,
+        location=location
+    )
+    db.session.add(warehouse)
+    db.session.commit()
+    
+    flash('تم إضافة المخزن بنجاح', 'success')
+    # Redirect to purchases page where warehouses are managed
+    return redirect(url_for('purchases', project_id=project_id))
+
 @app.route('/project/<int:project_id>/settings')
 def project_settings(project_id):
     """صفحة الإعدادات"""
