@@ -1,0 +1,199 @@
+{% extends 'base_with_sidebar.html' %}
+{% load humanize %}
+
+{% block title %}الأصناف - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="{% url 'dashboard:home' %}" class="text-gray-500 hover:text-gray-700">الرئيسية</a>
+<span class="text-gray-400 mx-2">/</span>
+<a href="{% url 'dashboard:project_dashboard' project.id %}" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a>
+<span class="text-gray-400 mx-2">/</span>
+<span class="text-gray-700 font-medium">الأصناف</span>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">الأصناف</h1>
+                <p class="text-sm text-gray-600 mt-1">إدارة أصناف المخزون</p>
+            </div>
+            <div class="flex space-x-reverse space-x-3">
+                <a href="{% url 'inventory:add_item' project.id %}" 
+                   class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center">
+                    <i class="fas fa-plus ml-2"></i>
+                    إضافة صنف
+                </a>
+                <a href="{% url 'inventory:movements' project.id %}" 
+                   class="bg-white text-gray-700 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors flex items-center">
+                    <i class="fas fa-exchange-alt ml-2"></i>
+                    حركات المخزون
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي الأصناف</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_items }}</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-boxes text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">القيمة الإجمالية</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ total_value|floatformat:0|intcomma }}</p>
+                    <p class="text-xs text-gray-500">ج.م</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-coins text-green-600"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">أصناف متوفرة</p>
+                    <p class="text-2xl font-bold text-green-600">
+                        {{ items|length }}
+                    </p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">أصناف نفذت</p>
+                    <p class="text-2xl font-bold text-red-600">0</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <i class="fas fa-exclamation-triangle text-red-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Items Table -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">قائمة الأصناف</h2>
+        </div>
+        
+        {% if items %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الكود
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الصنف
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الفئة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الوحدة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الكمية المتاحة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            سعر الوحدة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            القيمة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الحالة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            إجراءات
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for item in items %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ item.sku }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ item.name }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.category.name }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ item.get_uom_display|default:item.uom }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ item.available_qty|floatformat:3 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                            {{ item.std_cost|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {{ item.total_value|floatformat:2|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                bg-{{ item.stock_status_color }}-100 text-{{ item.stock_status_color }}-800">
+                                {{ item.stock_status_label }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex space-x-reverse space-x-2">
+                                <a href="{% url 'inventory:item_detail' project.id item.id %}" 
+                                   class="text-primary-600 hover:text-primary-900">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button onclick="editItem({{ item.id }})" 
+                                        class="text-blue-600 hover:text-blue-900">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-boxes text-gray-400 text-5xl mb-4"></i>
+            <p class="text-gray-500">لا توجد أصناف حتى الآن</p>
+            <a href="{% url 'inventory:add_item' project.id %}" 
+               class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة أول صنف
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function editItem(itemId) {
+    // TODO: Implement edit functionality
+    alert('سيتم إضافة وظيفة التعديل قريباً');
+}
+</script>
+{% endblock %}

@@ -4,11 +4,17 @@ from . import views
 app_name = 'inventory'
 
 urlpatterns = [
-    path('<int:project_id>/', views.inventory_list, name='list'),
-    path('<int:project_id>/items/', views.items_list, name='items'),
-    path('<int:project_id>/items/add/', views.add_item, name='add_item'),
-    path('<int:project_id>/item/<int:item_id>/', views.item_movements, name='item_movements'),
-    path('<int:project_id>/issue/', views.issue_stock, name='issue'),
-    path('<int:project_id>/receive/', views.receive_stock, name='receive'),
-    path('<int:project_id>/movements/', views.stock_movements, name='movements'),
+    # قائمة الأصناف
+    path('items/', views.items_list, name='items'),
+    path('items/add/', views.add_item, name='add_item'),
+    path('items/<int:item_id>/', views.item_detail, name='item_detail'),
+    
+    # حركات المخزون
+    path('movements/', views.stock_movements, name='movements'),
+    path('issue/', views.issue_stock, name='issue'),
+    path('receive/', views.receive_stock, name='receive'),
+    
+    # المخازن
+    path('warehouses/', views.warehouses_list, name='warehouses'),
+    path('warehouse/<int:warehouse_id>/', views.warehouse_detail, name='warehouse_detail'),
 ]

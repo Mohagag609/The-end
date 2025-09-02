@@ -238,3 +238,25 @@ class StockMove(models.Model):
                     'description': f"صرف مواد: {self.item.name} - {self.qty_out} {self.item.get_uom_display()}"
                 }
             )
+    
+    @classmethod
+    def get_available_qty(cls, project, warehouse, item):
+        """حساب الكمية المتاحة لصنف في مخزن"""
+        from django.db.models import Sum
+        from decimal import Decimal
+        
+        movements = cls.objects.filter(
+            project=project,
+            warehouse=warehouse,
+            item=item
+        )
+        
+        qty_in = movements.filter(qty_in__gt=0).aggregate(
+            total=Sum('qty_in')
+        )['total'] or Decimal('0')
+        
+        qty_out = movements.filter(qty_out__gt=0).aggregate(
+            total=Sum('qty_out')
+        )['total'] or Decimal('0')
+        
+        return qty_in - qty_out
