@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Musharaka Pro{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            200: '#bfdbfe',
+                            300: '#93c5fd',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        }
+                    },
+                    fontFamily: {
+                        'arabic': ['Cairo', 'Tajawal', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Arabic Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700&family=Tajawal:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Cairo', 'Tajawal', sans-serif;
+        }
+        
+        /* Sidebar Styles */
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+            z-index: 40;
+        }
+        
+        .sidebar-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar-closed {
+                transform: translateX(100%);
+            }
+        }
+        
+        /* Scrollbar Styles */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 3px;
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Active Menu Item */
+        .menu-item-active {
+            background: linear-gradient(90deg, rgba(59,130,246,0.1) 0%, rgba(59,130,246,0.05) 100%);
+            border-right: 3px solid #3b82f6;
+        }
+        
+        /* Submenu Animation */
+        .submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .submenu.open {
+            max-height: 500px;
+            transition: max-height 0.3s ease-in;
+        }
+    </style>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-arabic">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <aside id="sidebar" class="sidebar w-64 bg-white shadow-lg fixed md:relative h-full overflow-y-auto custom-scrollbar">
+            <div class="p-4 border-b">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-xl font-bold text-primary-600">
+                        <i class="fas fa-building ml-2"></i>
+                        Musharaka Pro
+                    </h1>
+                    <button onclick="toggleSidebar()" class="md:hidden">
+                        <i class="fas fa-times text-gray-500"></i>
+                    </button>
+                </div>
+                {% if project %}
+                <div class="mt-3 p-2 bg-primary-50 rounded-lg">
+                    <p class="text-xs text-gray-600">المشروع الحالي:</p>
+                    <p class="text-sm font-semibold text-primary-700">{{ project.name }}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <nav class="p-4">
+                <!-- الرئيسية -->
+                <div class="mb-6">
+                    <a href="{% url 'dashboard:home' %}" 
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if request.resolver_match.url_name == 'home' %}menu-item-active{% endif %}">
+                        <i class="fas fa-home text-gray-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">الرئيسية</span>
+                    </a>
+                    
+                    {% if project %}
+                    <a href="{% url 'dashboard:project_dashboard' project.id %}" 
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if request.resolver_match.url_name == 'project_dashboard' %}menu-item-active{% endif %}">
+                        <i class="fas fa-tachometer-alt text-gray-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">لوحة التحكم</span>
+                    </a>
+                    {% endif %}
+                </div>
+                
+                {% if project %}
+                <!-- إدارة المشروع -->
+                <div class="mb-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">إدارة المشروع</h3>
+                    
+                    <!-- المراحل -->
+                    <a href="{% url 'projects:stages' project.id %}" 
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if 'stages' in request.path %}menu-item-active{% endif %}">
+                        <i class="fas fa-layer-group text-indigo-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">المراحل</span>
+                    </a>
+                    
+                    <!-- الشركاء -->
+                    <div class="menu-group">
+                        <button onclick="toggleSubmenu('partners-menu')" 
+                                class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-100">
+                            <div class="flex items-center">
+                                <i class="fas fa-users text-blue-600 w-6"></i>
+                                <span class="mr-3 text-gray-700">الشركاء</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="partners-menu-icon"></i>
+                        </button>
+                        <div id="partners-menu" class="submenu mr-8">
+                            <a href="{% url 'partners:list' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                قائمة الشركاء
+                            </a>
+                            <a href="{% url 'partners:wallets' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                المحافظ
+                            </a>
+                            <a href="{% url 'partners:create_receipt' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                سند قبض
+                            </a>
+                            <a href="{% url 'partners:create_payment' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                سند صرف
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- العمليات المالية -->
+                <div class="mb-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">العمليات المالية</h3>
+                    
+                    <!-- المشتريات -->
+                    <div class="menu-group">
+                        <button onclick="toggleSubmenu('purchases-menu')" 
+                                class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-100">
+                            <div class="flex items-center">
+                                <i class="fas fa-shopping-cart text-purple-600 w-6"></i>
+                                <span class="mr-3 text-gray-700">المشتريات</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="purchases-menu-icon"></i>
+                        </button>
+                        <div id="purchases-menu" class="submenu mr-8">
+                            <a href="{% url 'purchases:list' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                الفواتير
+                            </a>
+                            <a href="{% url 'purchases:create' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                فاتورة جديدة
+                            </a>
+                            <a href="{% url 'suppliers:list' %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                الموردين
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- المصروفات -->
+                    <div class="menu-group">
+                        <button onclick="toggleSubmenu('expenses-menu')" 
+                                class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-100">
+                            <div class="flex items-center">
+                                <i class="fas fa-money-bill-wave text-red-600 w-6"></i>
+                                <span class="mr-3 text-gray-700">المصروفات</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="expenses-menu-icon"></i>
+                        </button>
+                        <div id="expenses-menu" class="submenu mr-8">
+                            <a href="{% url 'expenses:list' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                قائمة المصروفات
+                            </a>
+                            <a href="{% url 'expenses:create' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                إضافة مصروف
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- التسويات -->
+                    <a href="{% url 'settlements:list' project.id %}" 
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if 'settlements' in request.path %}menu-item-active{% endif %}">
+                        <i class="fas fa-balance-scale text-purple-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">التسويات</span>
+                    </a>
+                </div>
+                
+                <!-- المخزون -->
+                <div class="mb-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">المخزون</h3>
+                    
+                    <div class="menu-group">
+                        <button onclick="toggleSubmenu('inventory-menu')" 
+                                class="flex items-center justify-between w-full p-2 rounded-lg hover:bg-gray-100">
+                            <div class="flex items-center">
+                                <i class="fas fa-warehouse text-green-600 w-6"></i>
+                                <span class="mr-3 text-gray-700">المخزون</span>
+                            </div>
+                            <i class="fas fa-chevron-down text-gray-400 text-xs transition-transform" id="inventory-menu-icon"></i>
+                        </button>
+                        <div id="inventory-menu" class="submenu mr-8">
+                            <a href="{% url 'inventory:list' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                حركات المخزون
+                            </a>
+                            <a href="{% url 'inventory:items' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                الأصناف
+                            </a>
+                            <a href="{% url 'inventory:issue' project.id %}" 
+                               class="block p-2 text-sm text-gray-600 hover:bg-gray-50 rounded">
+                                صرف مواد
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- التقارير -->
+                <div class="mb-6">
+                    <h3 class="text-xs font-semibold text-gray-400 uppercase mb-2">التقارير والتحليلات</h3>
+                    
+                    <a href="{% url 'reports:index' project.id %}" 
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if 'reports' in request.path %}menu-item-active{% endif %}">
+                        <i class="fas fa-chart-bar text-teal-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">التقارير</span>
+                    </a>
+                    
+                    <a href="{% url 'dashboard:kpis' project.id %}" 
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100 {% if 'kpis' in request.path %}menu-item-active{% endif %}">
+                        <i class="fas fa-chart-line text-orange-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">مؤشرات الأداء</span>
+                    </a>
+                </div>
+                {% endif %}
+                
+                <!-- الإعدادات -->
+                <div class="border-t pt-4">
+                    <a href="/admin/" target="_blank"
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-cog text-gray-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">الإدارة</span>
+                    </a>
+                    <a href="#" onclick="logout()"
+                       class="flex items-center p-2 rounded-lg hover:bg-gray-100">
+                        <i class="fas fa-sign-out-alt text-gray-600 w-6"></i>
+                        <span class="mr-3 text-gray-700">خروج</span>
+                    </a>
+                </div>
+            </nav>
+        </aside>
+        
+        <!-- Sidebar Backdrop (Mobile) -->
+        <div id="sidebar-backdrop" 
+             class="sidebar-backdrop fixed inset-0 bg-black bg-opacity-50 z-30 hidden md:hidden"
+             onclick="toggleSidebar()"></div>
+        
+        <!-- Main Content -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+            <!-- Top Bar -->
+            <header class="bg-white shadow-sm border-b">
+                <div class="flex items-center justify-between px-4 py-3">
+                    <div class="flex items-center">
+                        <button onclick="toggleSidebar()" class="md:hidden ml-3">
+                            <i class="fas fa-bars text-gray-600"></i>
+                        </button>
+                        <nav class="hidden md:flex space-x-reverse space-x-2 text-sm">
+                            {% block breadcrumb %}
+                            <a href="{% url 'dashboard:home' %}" class="text-gray-500 hover:text-gray-700">الرئيسية</a>
+                            {% endblock %}
+                        </nav>
+                    </div>
+                    
+                    <div class="flex items-center space-x-reverse space-x-4">
+                        <!-- Quick Actions -->
+                        <div class="relative group">
+                            <button class="p-2 rounded-lg hover:bg-gray-100">
+                                <i class="fas fa-plus text-gray-600"></i>
+                            </button>
+                            <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                <div class="py-2">
+                                    {% if project %}
+                                    <a href="{% url 'partners:add' project.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-user-plus ml-2 text-blue-600"></i>
+                                        إضافة شريك
+                                    </a>
+                                    <a href="{% url 'expenses:create' project.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-money-bill-wave ml-2 text-red-600"></i>
+                                        إضافة مصروف
+                                    </a>
+                                    <a href="{% url 'purchases:create' project.id %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-file-invoice ml-2 text-purple-600"></i>
+                                        فاتورة شراء
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notifications -->
+                        <button class="p-2 rounded-lg hover:bg-gray-100 relative">
+                            <i class="fas fa-bell text-gray-600"></i>
+                            <span class="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+                        </button>
+                        
+                        <!-- User Menu -->
+                        <div class="relative group">
+                            <button class="flex items-center p-2 rounded-lg hover:bg-gray-100">
+                                <div class="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                    <i class="fas fa-user text-primary-600"></i>
+                                </div>
+                            </button>
+                            <div class="absolute left-0 mt-2 w-48 bg-white rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                <div class="py-2">
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-user-circle ml-2"></i>
+                                        الملف الشخصي
+                                    </a>
+                                    <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                        <i class="fas fa-cog ml-2"></i>
+                                        الإعدادات
+                                    </a>
+                                    <hr class="my-2">
+                                    <a href="#" onclick="logout()" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                        <i class="fas fa-sign-out-alt ml-2"></i>
+                                        تسجيل الخروج
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto bg-gray-50">
+                {% if messages %}
+                <div class="px-4 py-2">
+                    {% for message in messages %}
+                    <div class="mb-2 p-3 rounded-lg 
+                        {% if message.tags == 'error' %}bg-red-100 text-red-700 border border-red-200
+                        {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-700 border border-yellow-200
+                        {% elif message.tags == 'success' %}bg-green-100 text-green-700 border border-green-200
+                        {% else %}bg-blue-100 text-blue-700 border border-blue-200{% endif %}">
+                        <div class="flex items-center">
+                            {% if message.tags == 'error' %}
+                            <i class="fas fa-exclamation-circle ml-2"></i>
+                            {% elif message.tags == 'warning' %}
+                            <i class="fas fa-exclamation-triangle ml-2"></i>
+                            {% elif message.tags == 'success' %}
+                            <i class="fas fa-check-circle ml-2"></i>
+                            {% else %}
+                            <i class="fas fa-info-circle ml-2"></i>
+                            {% endif %}
+                            <span>{{ message }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    
+    <script>
+        // Toggle Sidebar
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            
+            sidebar.classList.toggle('sidebar-closed');
+            backdrop.classList.toggle('hidden');
+        }
+        
+        // Toggle Submenu
+        function toggleSubmenu(menuId) {
+            const submenu = document.getElementById(menuId);
+            const icon = document.getElementById(menuId + '-icon');
+            
+            submenu.classList.toggle('open');
+            icon.classList.toggle('rotate-180');
+        }
+        
+        // Auto-open active submenu
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            
+            // Check each submenu
+            ['partners', 'purchases', 'expenses', 'inventory'].forEach(menu => {
+                if (currentPath.includes('/' + menu + '/')) {
+                    const submenu = document.getElementById(menu + '-menu');
+                    const icon = document.getElementById(menu + '-menu-icon');
+                    if (submenu) {
+                        submenu.classList.add('open');
+                        icon.classList.add('rotate-180');
+                    }
+                }
+            });
+        });
+        
+        // Logout
+        function logout() {
+            if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                window.location.href = '/admin/logout/';
+            }
+        }
+        
+        // Close sidebar on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                const sidebar = document.getElementById('sidebar');
+                const backdrop = document.getElementById('sidebar-backdrop');
+                
+                if (!sidebar.classList.contains('sidebar-closed')) {
+                    sidebar.classList.add('sidebar-closed');
+                    backdrop.classList.add('hidden');
+                }
+            }
+        });
+    </script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

@@ -73,7 +73,7 @@ def project_dashboard(request, project_id):
         'stages': stages,
     }
     
-    return render(request, 'dashboard/project_dashboard.html', context)
+    return render(request, 'dashboard/project_dashboard_new.html', context)
 
 def kpis(request, project_id):
     """صفحة مؤشرات الأداء"""
