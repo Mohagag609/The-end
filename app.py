@@ -975,6 +975,105 @@ def project_reports(project_id):
                          all_projects=all_projects,
                          active_page='reports')
 
+@app.route('/project/<int:project_id>/suppliers')
+def project_suppliers(project_id):
+    """صفحة الموردين"""
+    project = Project.query.get_or_404(project_id)
+    all_projects = Project.query.all()
+    
+    # Get suppliers with their statistics for this project
+    suppliers = db.session.query(Supplier).all()
+    
+    # Calculate statistics for each supplier
+    for supplier in suppliers:
+        supplier.invoices_count = PurchaseInvoice.query.filter_by(
+            project_id=project_id,
+            supplier_id=supplier.id
+        ).count()
+        
+        supplier.total_purchases = db.session.query(
+            db.func.sum(PurchaseInvoice.total_amount)
+        ).filter_by(
+            project_id=project_id,
+            supplier_id=supplier.id
+        ).scalar() or 0
+        
+        last_invoice = PurchaseInvoice.query.filter_by(
+            project_id=project_id,
+            supplier_id=supplier.id
+        ).order_by(PurchaseInvoice.invoice_date.desc()).first()
+        
+        supplier.last_invoice_date = last_invoice.invoice_date if last_invoice else None
+    
+    # Get recent invoices for this project
+    recent_invoices = PurchaseInvoice.query.filter_by(
+        project_id=project_id
+    ).order_by(PurchaseInvoice.invoice_date.desc()).limit(10).all()
+    
+    # Get items
+    items = Item.query.all()
+    
+    # Calculate totals
+    total_invoices = PurchaseInvoice.query.filter_by(project_id=project_id).count()
+    total_purchases = db.session.query(
+        db.func.sum(PurchaseInvoice.total_amount)
+    ).filter_by(project_id=project_id).scalar() or 0
+    
+    active_suppliers = len([s for s in suppliers if s.invoices_count > 0])
+    
+    return render_template('suppliers_page.html', 
+                         current_project=project,
+                         all_projects=all_projects,
+                         suppliers=suppliers,
+                         recent_invoices=recent_invoices,
+                         items=items,
+                         total_invoices=total_invoices,
+                         total_purchases=total_purchases,
+                         active_suppliers=active_suppliers,
+                         active_page='suppliers')
+
+@app.route('/project/<int:project_id>/supplier/new', methods=['POST'])
+def project_supplier_new(project_id):
+    """إضافة مورد جديد"""
+    name = request.form.get('name')
+    contact_info = request.form.get('contact_info', '')
+    address = request.form.get('address', '')
+    notes = request.form.get('notes', '')
+    is_active = request.form.get('is_active') == 'on'
+    
+    supplier = Supplier(
+        name=name,
+        contact_info=contact_info,
+        address=address,
+        notes=notes,
+        is_active=is_active
+    )
+    db.session.add(supplier)
+    db.session.commit()
+    
+    flash('تم إضافة المورد بنجاح', 'success')
+    return redirect(url_for('project_suppliers', project_id=project_id))
+
+@app.route('/project/<int:project_id>/item/new', methods=['POST'])
+def project_item_new(project_id):
+    """إضافة صنف جديد"""
+    name = request.form.get('name')
+    unit = request.form.get('unit', 'قطعة')
+    category = request.form.get('category', '')
+    description = request.form.get('description', '')
+    
+    item = Item(
+        name=name,
+        unit=unit,
+        category=category,
+        description=description
+    )
+    db.session.add(item)
+    db.session.commit()
+    
+    flash('تم إضافة الصنف بنجاح', 'success')
+    return redirect(url_for('project_suppliers', project_id=project_id))
+
 @app.route('/project/<int:project_id>/settings')
 def project_settings(project_id):
     """صفحة الإعدادات"""

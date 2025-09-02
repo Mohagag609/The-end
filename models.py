@@ -62,26 +62,53 @@ class Supplier(db.Model):
     __tablename__ = 'suppliers'
     
     id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True)
     name = db.Column(db.String(200), nullable=False)
+    contact_info = db.Column(db.String(200))
+    address = db.Column(db.Text)
+    notes = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     purchase_invoices = db.relationship('PurchaseInvoice', back_populates='supplier')
     expenses = db.relationship('Expense', back_populates='supplier')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.code:
+            # Generate unique code
+            last_supplier = Supplier.query.order_by(Supplier.id.desc()).first()
+            if last_supplier:
+                self.code = f"SUP{last_supplier.id + 1:04d}"
+            else:
+                self.code = "SUP0001"
 
 class Item(db.Model):
     __tablename__ = 'items'
     
     id = db.Column(db.Integer, primary_key=True)
-    sku = db.Column(db.String(100), unique=True, nullable=False)
+    code = db.Column(db.String(100), unique=True)
     name = db.Column(db.String(200), nullable=False)
-    uom = db.Column(db.String(50), default='unit')  # unit of measure
+    unit = db.Column(db.String(50), default='قطعة')
+    category = db.Column(db.String(100))
+    description = db.Column(db.Text)
     std_cost = db.Column(db.Numeric(14, 2), default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationships
     purchase_items = db.relationship('PurchaseInvoiceItem', back_populates='item')
     stock_moves = db.relationship('StockMove', back_populates='item')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.code:
+            # Generate unique code
+            last_item = Item.query.order_by(Item.id.desc()).first()
+            if last_item:
+                self.code = f"ITM{last_item.id + 1:04d}"
+            else:
+                self.code = "ITM0001"
 
 class Warehouse(db.Model):
     __tablename__ = 'warehouses'
