@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
-from models import db, Project, Partner, ProjectPartner, Supplier, Item, Warehouse, Stage, PurchaseInvoice, PurchaseInvoiceItem, StockMove, Expense, Voucher, Allocation, PartnerSettleBatch, PartnerSettleLine, PartnerClaim, WalletPriority
+from models import db, Project, Partner, ProjectPartner, Supplier, Item, Warehouse, Stage, PurchaseInvoice, PurchaseInvoiceItem, StockMove, Expense, Voucher, Allocation, PartnerSettleBatch, PartnerSettleLine, PartnerClaim, WalletPriority, ProjectCashbox, CashboxTransaction, SupplierPayment
 from datetime import datetime, date
 from decimal import Decimal
 import json
@@ -1151,6 +1151,162 @@ def project_warehouse_new(project_id):
     flash('تم إضافة المخزن بنجاح', 'success')
     # Redirect to purchases page where warehouses are managed
     return redirect(url_for('purchases', project_id=project_id))
+
+@app.route('/project/<int:project_id>/cashboxes')
+def project_cashboxes(project_id):
+    """صفحة المحافظ النقدية"""
+    project = Project.query.get_or_404(project_id)
+    all_projects = Project.query.all()
+    
+    # Get cashboxes with statistics
+    cashboxes = ProjectCashbox.query.filter_by(project_id=project_id).all()
+    
+    for cashbox in cashboxes:
+        # Calculate totals
+        cashbox.total_in = db.session.query(
+            db.func.sum(CashboxTransaction.amount)
+        ).filter_by(
+            cashbox_id=cashbox.id,
+            transaction_type='in'
+        ).scalar() or 0
+        
+        cashbox.total_out = db.session.query(
+            db.func.sum(CashboxTransaction.amount)
+        ).filter_by(
+            cashbox_id=cashbox.id,
+            transaction_type='out'
+        ).scalar() or 0
+    
+    # Get recent transactions
+    recent_transactions = CashboxTransaction.query.join(ProjectCashbox).filter(
+        ProjectCashbox.project_id == project_id
+    ).order_by(CashboxTransaction.transaction_date.desc()).limit(20).all()
+    
+    # Calculate totals
+    total_balance = sum(c.balance for c in cashboxes)
+    total_deposits = sum(c.total_in for c in cashboxes)
+    total_expenses = sum(c.total_out for c in cashboxes)
+    
+    return render_template('cashboxes_page.html',
+                         current_project=project,
+                         all_projects=all_projects,
+                         cashboxes=cashboxes,
+                         recent_transactions=recent_transactions,
+                         total_balance=total_balance,
+                         total_deposits=total_deposits,
+                         total_expenses=total_expenses,
+                         active_page='cashboxes')
+
+@app.route('/project/<int:project_id>/cashbox/new', methods=['POST'])
+def new_cashbox(project_id):
+    """إنشاء محفظة جديدة"""
+    try:
+        name = request.form.get('name')
+        initial_balance = Decimal(request.form.get('initial_balance', '0'))
+        is_default = request.form.get('is_default') == 'on'
+        
+        # If this is default, unset other defaults
+        if is_default:
+            ProjectCashbox.query.filter_by(project_id=project_id, is_default=True).update({'is_default': False})
+        
+        # Create cashbox
+        cashbox = ProjectCashbox(
+            project_id=project_id,
+            name=name,
+            code=f'CB{ProjectCashbox.query.filter_by(project_id=project_id).count() + 1:03d}',
+            balance=initial_balance,
+            is_default=is_default,
+            is_active=True
+        )
+        db.session.add(cashbox)
+        db.session.flush()
+        
+        # Add initial balance transaction if any
+        if initial_balance > 0:
+            transaction = CashboxTransaction(
+                cashbox_id=cashbox.id,
+                transaction_type='in',
+                amount=initial_balance,
+                balance_after=initial_balance,
+                description='رصيد افتتاحي',
+                transaction_date=date.today()
+            )
+            db.session.add(transaction)
+        
+        db.session.commit()
+        flash('تم إنشاء المحفظة بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في إنشاء المحفظة: {str(e)}', 'error')
+    
+    return redirect(url_for('project_cashboxes', project_id=project_id))
+
+@app.route('/project/<int:project_id>/cashbox/<int:cashbox_id>/deposit', methods=['POST'])
+def cashbox_deposit(project_id, cashbox_id):
+    """إيداع في المحفظة"""
+    try:
+        cashbox = ProjectCashbox.query.get_or_404(cashbox_id)
+        amount = Decimal(request.form.get('amount', '0'))
+        description = request.form.get('description', '')
+        
+        # Update balance
+        cashbox.balance += amount
+        
+        # Create transaction
+        transaction = CashboxTransaction(
+            cashbox_id=cashbox_id,
+            transaction_type='in',
+            amount=amount,
+            balance_after=cashbox.balance,
+            description=description,
+            transaction_date=date.today()
+        )
+        db.session.add(transaction)
+        db.session.commit()
+        
+        flash(f'تم إيداع {amount} جنيه بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في الإيداع: {str(e)}', 'error')
+    
+    return redirect(url_for('project_cashboxes', project_id=project_id))
+
+@app.route('/project/<int:project_id>/cashbox/<int:cashbox_id>/withdraw', methods=['POST'])
+def cashbox_withdraw(project_id, cashbox_id):
+    """صرف من المحفظة"""
+    try:
+        cashbox = ProjectCashbox.query.get_or_404(cashbox_id)
+        amount = Decimal(request.form.get('amount', '0'))
+        expense_type = request.form.get('expense_type', 'general')
+        description = request.form.get('description', '')
+        
+        # Check balance
+        if cashbox.balance < amount:
+            flash('الرصيد غير كافي', 'error')
+            return redirect(url_for('project_cashboxes', project_id=project_id))
+        
+        # Update balance
+        cashbox.balance -= amount
+        
+        # Create transaction
+        transaction = CashboxTransaction(
+            cashbox_id=cashbox_id,
+            transaction_type='out',
+            amount=amount,
+            balance_after=cashbox.balance,
+            reference_type=expense_type,
+            description=description,
+            transaction_date=date.today()
+        )
+        db.session.add(transaction)
+        db.session.commit()
+        
+        flash(f'تم صرف {amount} جنيه بنجاح', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في الصرف: {str(e)}', 'error')
+    
+    return redirect(url_for('project_cashboxes', project_id=project_id))
 
 @app.route('/project/<int:project_id>/settings')
 def project_settings(project_id):

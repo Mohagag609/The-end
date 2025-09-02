@@ -237,6 +237,14 @@
                     لوحة التحكم
                 </a>
                 
+                <a href="/project/{{ current_project.id }}/cashboxes" 
+                   class="sidebar-link flex items-center px-3 py-2.5 mb-1 rounded-lg text-sm {% if active_page == 'cashboxes' %}active{% endif %}">
+                    <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                    المحافظ النقدية
+                </a>
+                
                 <a href="/project/{{ current_project.id }}/partners" 
                    class="sidebar-link flex items-center px-3 py-2.5 mb-1 rounded-lg text-sm {% if active_page == 'partners' %}active{% endif %}">
                     <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

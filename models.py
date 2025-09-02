@@ -121,6 +121,41 @@ class Item(db.Model):
             else:
                 self.code = "ITM0001"
 
+class ProjectCashbox(db.Model):
+    """محافظ المشروع - صناديق النقدية"""
+    __tablename__ = 'project_cashboxes'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    name = db.Column(db.String(100), nullable=False)  # محفظة 1، محفظة 2، إلخ
+    code = db.Column(db.String(50))
+    balance = db.Column(db.Numeric(14, 2), default=0)  # الرصيد الحالي
+    is_default = db.Column(db.Boolean, default=False)  # المحفظة الافتراضية
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='cashboxes')
+    transactions = db.relationship('CashboxTransaction', back_populates='cashbox', cascade='all, delete-orphan')
+
+class CashboxTransaction(db.Model):
+    """حركات المحافظ"""
+    __tablename__ = 'cashbox_transactions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    cashbox_id = db.Column(db.Integer, db.ForeignKey('project_cashboxes.id'), nullable=False)
+    transaction_type = db.Column(db.String(20), nullable=False)  # in | out | transfer
+    amount = db.Column(db.Numeric(14, 2), nullable=False)
+    balance_after = db.Column(db.Numeric(14, 2), nullable=False)
+    reference_type = db.Column(db.String(50))  # expense | supplier_payment | partner_deposit | partner_withdraw
+    reference_id = db.Column(db.Integer)
+    description = db.Column(db.Text)
+    transaction_date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    cashbox = db.relationship('ProjectCashbox', back_populates='transactions')
+
 class Warehouse(db.Model):
     __tablename__ = 'warehouses'
     
@@ -213,12 +248,18 @@ class Expense(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
     stage_id = db.Column(db.Integer, db.ForeignKey('stages.id'), nullable=True)
+    cashbox_id = db.Column(db.Integer, db.ForeignKey('project_cashboxes.id'), nullable=True)
+    expense_type = db.Column(db.String(50), nullable=False, default='general')  # general | supplier_payment | wages | materials | others
     expense_date = db.Column(db.Date, nullable=False)
     amount = db.Column(db.Numeric(14, 2), nullable=False)
+    paid_amount = db.Column(db.Numeric(14, 2), default=0)  # المبلغ المدفوع
+    remaining_amount = db.Column(db.Numeric(14, 2), default=0)  # المبلغ المتبقي
     payee_type = db.Column(db.String(20))  # supplier | partner | other
     payee_id = db.Column(db.Integer, nullable=True)
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=True)
     partner_id = db.Column(db.Integer, db.ForeignKey('partners.id'), nullable=True)
+    invoice_ref = db.Column(db.String(100))  # مرجع الفاتورة
+    payment_status = db.Column(db.String(20), default='pending')  # pending | partial | paid
     description = db.Column(db.Text)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -227,6 +268,29 @@ class Expense(db.Model):
     stage = db.relationship('Stage', back_populates='expenses')
     supplier = db.relationship('Supplier', back_populates='expenses')
     partner = db.relationship('Partner', back_populates='expenses')
+    cashbox = db.relationship('ProjectCashbox', backref='expenses')
+
+class SupplierPayment(db.Model):
+    """مدفوعات الموردين"""
+    __tablename__ = 'supplier_payments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, db.ForeignKey('purchase_invoices.id'), nullable=True)
+    cashbox_id = db.Column(db.Integer, db.ForeignKey('project_cashboxes.id'), nullable=False)
+    payment_date = db.Column(db.Date, nullable=False)
+    amount = db.Column(db.Numeric(14, 2), nullable=False)
+    payment_method = db.Column(db.String(50), default='cash')  # cash | check | transfer
+    reference_no = db.Column(db.String(100))
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    project = db.relationship('Project', backref='supplier_payments')
+    supplier = db.relationship('Supplier', backref='payments')
+    invoice = db.relationship('PurchaseInvoice', backref='payments')
+    cashbox = db.relationship('ProjectCashbox', backref='supplier_payments')
 
 class Voucher(db.Model):
     __tablename__ = 'vouchers'
@@ -236,6 +300,7 @@ class Voucher(db.Model):
     v_type = db.Column(db.String(20), nullable=False)  # receipt | payment
     party_type = db.Column(db.String(20), default='partner')
     party_id = db.Column(db.Integer, db.ForeignKey('partners.id'), nullable=False)
+    cashbox_id = db.Column(db.Integer, db.ForeignKey('project_cashboxes.id'), nullable=True)
     amount = db.Column(db.Numeric(14, 2), nullable=False)
     v_date = db.Column(db.Date, nullable=False)
     ref_code = db.Column(db.String(100), unique=True, nullable=False)
@@ -245,6 +310,7 @@ class Voucher(db.Model):
     # Relationships
     project = db.relationship('Project', back_populates='vouchers')
     partner = db.relationship('Partner', back_populates='vouchers')
+    cashbox = db.relationship('ProjectCashbox', backref='vouchers')
 
 class Allocation(db.Model):
     __tablename__ = 'allocations'
