@@ -329,7 +329,7 @@ def new_stage(project_id):
     db.session.commit()
     
     flash('تم إنشاء المرحلة بنجاح', 'success')
-    return redirect(url_for('project_home', project_id=project_id))
+    return redirect(url_for('project_stages', project_id=project_id))
 
 @app.route('/project/<int:project_id>/expense/quick', methods=['POST'])
 def quick_expense(project_id):
@@ -350,7 +350,7 @@ def quick_expense(project_id):
     db.session.commit()
     
     flash('تم إضافة المصروف بنجاح', 'success')
-    return redirect(url_for('project_home', project_id=project_id))
+    return redirect(url_for('project_expenses', project_id=project_id))
 
 @app.route('/project/<int:project_id>/stage/<int:stage_id>/allocate', methods=['POST'])
 def allocate_stage(project_id, stage_id):
@@ -398,7 +398,7 @@ def allocate_stage(project_id, stage_id):
     db.session.commit()
     
     flash(f'تم توزيع {delta} جنيه على الشركاء', 'success')
-    return redirect(url_for('project_home', project_id=project_id))
+    return redirect(url_for('project_stages', project_id=project_id))
 
 @app.route('/suppliers')
 def suppliers():

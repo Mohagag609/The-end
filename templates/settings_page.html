@@ -1,0 +1,143 @@
+{% extends "layout.html" %}
+
+{% block title %}الإعدادات - {{ current_project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">إعدادات المشروع</h1>
+    <p class="text-gray-600 mt-1">إدارة إعدادات وخصائص المشروع</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Project Settings -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">معلومات المشروع</h2>
+        <form>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">اسم المشروع</label>
+                <input type="text" value="{{ current_project.name }}" 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">كود المشروع</label>
+                <input type="text" value="{{ current_project.code }}" readonly
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">العملة الأساسية</label>
+                <input type="text" value="{{ current_project.base_currency }}" readonly
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 cursor-not-allowed">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">حالة المشروع</label>
+                <select class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="open" {% if current_project.status == 'open' %}selected{% endif %}>مفتوح</option>
+                    <option value="closed" {% if current_project.status == 'closed' %}selected{% endif %}>مغلق</option>
+                </select>
+            </div>
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                حفظ التغييرات
+            </button>
+        </form>
+    </div>
+    
+    <!-- Wallet Priority Settings -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">إعدادات ترتيب الخصم</h2>
+        <p class="text-sm text-gray-600 mb-4">تحديد ترتيب الخصم من المحافظ عند عدم كفاية رصيد محفظة واحدة</p>
+        
+        <form action="/project/{{ current_project.id }}/priority" method="POST">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">ترتيب الشركاء</label>
+                <div class="space-y-2" id="sortablePartners">
+                    {% if priority and priority.partner_order %}
+                        {% for partner_id in priority.partner_order %}
+                            {% for pp in partners %}
+                                {% if pp.partner_id == partner_id %}
+                                <div class="flex items-center p-2 bg-gray-50 rounded cursor-move" data-partner-id="{{ pp.partner_id }}">
+                                    <svg class="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                                    </svg>
+                                    <span class="text-sm">{{ pp.partner.name }} ({{ "{:.2f}".format(pp.share_pct) }}%)</span>
+                                    <input type="hidden" name="partner_order[]" value="{{ pp.partner_id }}">
+                                </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endfor %}
+                    {% else %}
+                        {% for pp in partners %}
+                        <div class="flex items-center p-2 bg-gray-50 rounded cursor-move" data-partner-id="{{ pp.partner_id }}">
+                            <svg class="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                            <span class="text-sm">{{ pp.partner.name }} ({{ "{:.2f}".format(pp.share_pct) }}%)</span>
+                            <input type="hidden" name="partner_order[]" value="{{ pp.partner_id }}">
+                        </div>
+                        {% endfor %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="allow_negative" class="ml-2 rounded border-gray-300 text-blue-600"
+                           {% if priority and priority.allow_negative %}checked{% endif %}>
+                    <span class="text-sm font-medium text-gray-700">السماح بالرصيد السالب</span>
+                </label>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">حد الائتمان لكل شريك</label>
+                <div class="relative">
+                    <input type="number" name="credit_limit" step="0.01" min="0" 
+                           value="{% if priority and priority.credit_limit_per_partner %}{{ priority.credit_limit_per_partner }}{% endif %}"
+                           class="w-full px-3 py-2 pl-12 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="0.00">
+                    <span class="absolute left-3 top-2.5 text-gray-500 text-sm">جنيه</span>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">اتركه فارغاً لعدم وضع حد ائتماني</p>
+            </div>
+            
+            <button type="submit" class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition">
+                حفظ إعدادات الخصم
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Danger Zone -->
+<div class="mt-6 bg-white rounded-lg shadow p-6 border-2 border-red-200">
+    <h2 class="text-lg font-semibold text-red-600 mb-4">منطقة الخطر</h2>
+    <div class="space-y-4">
+        <div class="flex justify-between items-center p-4 bg-red-50 rounded-lg">
+            <div>
+                <h3 class="font-medium text-gray-900">حذف المشروع</h3>
+                <p class="text-sm text-gray-600">حذف المشروع نهائياً مع جميع البيانات المرتبطة</p>
+            </div>
+            <button disabled class="px-4 py-2 bg-gray-300 text-gray-500 rounded-lg cursor-not-allowed">
+                غير متاح
+            </button>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+<script>
+// Enable drag and drop for partners order
+const sortablePartners = document.getElementById('sortablePartners');
+if (sortablePartners) {
+    new Sortable(sortablePartners, {
+        animation: 150,
+        ghostClass: 'bg-blue-100',
+        onEnd: function(evt) {
+            // Update hidden inputs
+            const items = sortablePartners.querySelectorAll('[data-partner-id]');
+            items.forEach((item, index) => {
+                const input = item.querySelector('input[type="hidden"]');
+                input.name = `partner_order[]`;
+            });
+        }
+    });
+}
+</script>
+{% endblock %}

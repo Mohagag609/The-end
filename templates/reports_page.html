@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+
+{% block title %}التقارير - {{ current_project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">التقارير</h1>
+    <p class="text-gray-600 mt-1">التقارير والإحصائيات التفصيلية للمشروع</p>
+</div>
+
+<!-- Reports Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Wallets Overview -->
+    <a href="/project/{{ current_project.id }}/wallets" 
+       class="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block">
+        <div class="flex items-center mb-4">
+            <div class="p-3 bg-blue-100 rounded-lg">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+            </div>
+            <h3 class="mr-3 text-lg font-semibold text-gray-900">نظرة عامة على المحافظ</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">عرض شامل لجميع محافظ الشركاء وأرصدتهم</p>
+        <div class="flex items-center text-blue-600">
+            <span class="text-sm font-medium">عرض التقرير</span>
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </div>
+    </a>
+    
+    <!-- Partner Statements -->
+    <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
+        <div class="flex items-center mb-4">
+            <div class="p-3 bg-green-100 rounded-lg">
+                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <h3 class="mr-3 text-lg font-semibold text-gray-900">كشوف حساب الشركاء</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">كشف حساب تفصيلي لكل شريك</p>
+        <div class="text-sm text-gray-500">اختر شريك:</div>
+        <select onchange="if(this.value) window.location.href=this.value" 
+                class="mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">-- اختر شريك --</option>
+            {% for pp in current_project.partners %}
+            <option value="/project/{{ current_project.id }}/report/partner/{{ pp.partner.id }}">
+                {{ pp.partner.name }} ({{ "{:.2f}".format(pp.share_pct) }}%)
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <!-- Settlements Report -->
+    <a href="/project/{{ current_project.id }}/settlements" 
+       class="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block">
+        <div class="flex items-center mb-4">
+            <div class="p-3 bg-purple-100 rounded-lg">
+                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <h3 class="mr-3 text-lg font-semibold text-gray-900">تقرير التسويات</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">عرض جميع التسويات الدورية بين الشركاء</p>
+        <div class="flex items-center text-purple-600">
+            <span class="text-sm font-medium">عرض التقرير</span>
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </div>
+    </a>
+    
+    <!-- Stage Costs Report -->
+    <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
+        <div class="flex items-center mb-4">
+            <div class="p-3 bg-orange-100 rounded-lg">
+                <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                </svg>
+            </div>
+            <h3 class="mr-3 text-lg font-semibold text-gray-900">تقرير تكاليف المراحل</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">تكاليف تفصيلية لكل مرحلة</p>
+        <a href="/project/{{ current_project.id }}/stages" class="flex items-center text-orange-600">
+            <span class="text-sm font-medium">عرض المراحل</span>
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </a>
+    </div>
+    
+    <!-- Purchase Report -->
+    <a href="/project/{{ current_project.id }}/purchases" 
+       class="bg-white rounded-lg shadow hover:shadow-lg transition p-6 block">
+        <div class="flex items-center mb-4">
+            <div class="p-3 bg-red-100 rounded-lg">
+                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <h3 class="mr-3 text-lg font-semibold text-gray-900">تقرير المشتريات</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">فواتير الشراء وحركات المخزون</p>
+        <div class="flex items-center text-red-600">
+            <span class="text-sm font-medium">عرض التقرير</span>
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+            </svg>
+        </div>
+    </a>
+    
+    <!-- Export Data -->
+    <div class="bg-white rounded-lg shadow hover:shadow-lg transition p-6">
+        <div class="flex items-center mb-4">
+            <div class="p-3 bg-gray-100 rounded-lg">
+                <svg class="w-8 h-8 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+            </div>
+            <h3 class="mr-3 text-lg font-semibold text-gray-900">تصدير البيانات</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">تصدير البيانات بصيغة CSV</p>
+        <button disabled class="flex items-center text-gray-400 cursor-not-allowed">
+            <span class="text-sm font-medium">قريباً</span>
+        </button>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="mt-8 bg-white rounded-lg shadow p-6">
+    <h2 class="text-lg font-semibold text-gray-900 mb-4">إحصائيات سريعة</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="text-center">
+            <p class="text-2xl font-bold text-gray-900">{{ current_project.partners|length }}</p>
+            <p class="text-sm text-gray-600">شريك</p>
+        </div>
+        <div class="text-center">
+            <p class="text-2xl font-bold text-gray-900">{{ current_project.stages|length }}</p>
+            <p class="text-sm text-gray-600">مرحلة</p>
+        </div>
+        <div class="text-center">
+            <p class="text-2xl font-bold text-gray-900">{{ current_project.expenses|length }}</p>
+            <p class="text-sm text-gray-600">مصروف</p>
+        </div>
+        <div class="text-center">
+            <p class="text-2xl font-bold text-gray-900">{{ current_project.purchase_invoices|length }}</p>
+            <p class="text-sm text-gray-600">فاتورة شراء</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
