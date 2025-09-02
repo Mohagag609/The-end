@@ -422,19 +422,20 @@ def new_supplier():
 def purchases(project_id):
     """قائمة المشتريات"""
     project = Project.query.get_or_404(project_id)
-    invoices = PurchaseInvoice.query.filter_by(project_id=project_id).all()
+    invoices = PurchaseInvoice.query.filter_by(project_id=project_id).order_by(PurchaseInvoice.invoice_date.desc()).all()
     suppliers = Supplier.query.all()
     items = Item.query.all()
     warehouses = Warehouse.query.filter_by(project_id=project_id).all()
+    all_projects = Project.query.all()
     
-    from datetime import date as date_type
-    return render_template('purchases_improved.html', 
-                         project=project,
+    return render_template('purchases_page.html', 
+                         current_project=project,
+                         all_projects=all_projects,
                          invoices=invoices,
                          suppliers=suppliers,
                          items=items,
                          warehouses=warehouses,
-                         date=date_type)
+                         active_page='purchases')
 
 @app.route('/project/<int:project_id>/purchase/new', methods=['POST'])
 def new_purchase(project_id):
@@ -550,8 +551,13 @@ def settlements(project_id):
     """قائمة التسويات"""
     project = Project.query.get_or_404(project_id)
     batches = PartnerSettleBatch.query.filter_by(project_id=project_id).order_by(PartnerSettleBatch.cutoff_date.desc()).all()
+    all_projects = Project.query.all()
     
-    return render_template('settlements.html', project=project, batches=batches)
+    return render_template('settlements_page.html', 
+                         current_project=project,
+                         all_projects=all_projects,
+                         batches=batches,
+                         active_page='settlements')
 
 @app.route('/project/<int:project_id>/settlement/new', methods=['GET', 'POST'])
 def new_settlement(project_id):
@@ -673,20 +679,29 @@ def new_settlement(project_id):
         flash('تم إنشاء التسوية بنجاح', 'success')
         return redirect(url_for('settlement_preview', project_id=project_id, batch_id=batch.id))
     
-    return render_template('settlement_new.html', project=project)
+    all_projects = Project.query.all()
+    return render_template('settlement_new.html', 
+                         current_project=project,
+                         all_projects=all_projects,
+                         active_page='settlements')
 
 @app.route('/project/<int:project_id>/settlement/<int:batch_id>/preview')
 def settlement_preview(project_id, batch_id):
     """معاينة التسوية"""
+    project = Project.query.get_or_404(project_id)
     batch = PartnerSettleBatch.query.get_or_404(batch_id)
     lines = PartnerSettleLine.query.filter_by(batch_id=batch_id).all()
     claims = PartnerClaim.query.filter_by(batch_id=batch_id).all()
+    all_projects = Project.query.all()
     
     return render_template('settlement_preview.html', 
+                         current_project=project,
+                         all_projects=all_projects,
                          project_id=project_id,
                          batch=batch, 
                          lines=lines, 
-                         claims=claims)
+                         claims=claims,
+                         active_page='settlements')
 
 @app.route('/project/<int:project_id>/settlement/<int:batch_id>/post', methods=['POST'])
 def settlement_post(project_id, batch_id):

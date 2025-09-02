@@ -38,13 +38,20 @@
         }
         
         .sidebar-link:hover {
-            padding-right: 1.5rem;
+            padding-right: 1.25rem;
+            background-color: #f3f4f6;
         }
         
         .sidebar-link.active {
             background: linear-gradient(90deg, #3B82F6 0%, #2563EB 100%);
             color: white;
-            border-right: 4px solid #1D4ED8;
+            border-right: 3px solid #1D4ED8;
+        }
+        
+        /* RTL specific adjustments */
+        [dir="rtl"] .sidebar-link.active {
+            border-right: 3px solid #1D4ED8;
+            border-left: none;
         }
         
         .toast {
@@ -233,8 +240,8 @@
     </aside>
     
     <!-- Main Content -->
-    <main :class="sidebarOpen ? 'ml-56' : 'ml-0'" class="pt-16 min-h-screen transition-all duration-300">
-        <div class="p-4 lg:p-6">
+    <main :class="sidebarOpen ? 'mr-56' : 'mr-0'" class="pt-16 min-h-screen transition-all duration-300">
+        <div class="p-4 lg:p-6 max-w-7xl mx-auto">
             {% block content %}{% endblock %}
         </div>
     </main>
