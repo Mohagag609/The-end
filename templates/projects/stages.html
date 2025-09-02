@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
-{% block title %}المراحل - {{ project.name }}{% endblock %}
+{% block title %}مراحل المشروع - {{ project.name }}{% endblock %}
 
 {% block breadcrumb %}
 <nav class="bg-white border-b px-4 py-3">
@@ -21,101 +21,253 @@
         <!-- Header -->
         <div class="md:flex md:items-center md:justify-between mb-6">
             <h1 class="text-2xl font-bold text-gray-900">
-                <i class="fas fa-tasks ml-2"></i>
+                <i class="fas fa-layer-group ml-2 text-indigo-600"></i>
                 مراحل المشروع
             </h1>
             <div class="mt-4 flex md:mt-0 md:mr-4">
-                <a href="{% url 'projects:create_stage' project.id %}" 
-                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                <button onclick="openAddStageModal()" 
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                     <i class="fas fa-plus ml-2"></i>
                     إضافة مرحلة
-                </a>
+                </button>
             </div>
         </div>
-        
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">إجمالي الميزانية</p>
+                <p class="text-2xl font-bold text-blue-600">
+                    {{ totals.budget|floatformat:2|intcomma }} ج.م
+                </p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">إجمالي التكلفة</p>
+                <p class="text-2xl font-bold text-red-600">
+                    {{ totals.cost|floatformat:2|intcomma }} ج.م
+                </p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">الفرق</p>
+                <p class="text-2xl font-bold {% if totals.variance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ totals.variance|floatformat:2|intcomma }} ج.م
+                </p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">نسبة الإنجاز</p>
+                <p class="text-2xl font-bold text-indigo-600">
+                    {{ totals.completion|floatformat:1 }}%
+                </p>
+            </div>
+        </div>
+
         <!-- Stages Grid -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for stage in stages %}
-            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
-                <div class="p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-medium text-gray-900">{{ stage.name }}</h3>
-                        {% if stage.status == 'active' %}
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                            نشط
-                        </span>
-                        {% elif stage.status == 'completed' %}
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                            مكتمل
-                        </span>
-                        {% else %}
-                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                            معلق
-                        </span>
-                        {% endif %}
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-indigo-50 to-purple-50">
+                    <h3 class="text-lg font-medium text-gray-900">
+                        {{ stage.name }}
+                    </h3>
+                    <p class="text-sm text-gray-500 mt-1">
+                        {{ stage.description|default:"" }}
+                    </p>
+                </div>
+                
+                <div class="px-6 py-4">
+                    <!-- Progress Bar -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>التقدم</span>
+                            <span>{{ stage.progress|floatformat:1 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="h-2 rounded-full 
+                                {% if stage.progress >= 100 %}bg-green-600
+                                {% elif stage.progress >= 75 %}bg-blue-600
+                                {% elif stage.progress >= 50 %}bg-yellow-600
+                                {% elif stage.progress >= 25 %}bg-orange-600
+                                {% else %}bg-red-600{% endif %}"
+                                style="width: {{ stage.progress|floatformat:0 }}%"></div>
+                        </div>
                     </div>
                     
-                    <div class="space-y-3">
-                        <div>
-                            <p class="text-sm text-gray-500">الميزانية</p>
-                            <p class="text-lg font-semibold text-gray-900">
+                    <!-- Stage Details -->
+                    <dl class="space-y-2">
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">الميزانية:</dt>
+                            <dd class="text-sm font-medium text-gray-900">
                                 {{ stage.budget|floatformat:2|intcomma }} ج.م
-                            </p>
+                            </dd>
                         </div>
-                        
-                        <div>
-                            <p class="text-sm text-gray-500">التكلفة الفعلية</p>
-                            <p class="text-lg font-semibold {% if stage.is_over %}text-red-600{% else %}text-gray-900{% endif %}">
-                                {{ stage.total_cost|floatformat:2|intcomma }} ج.م
-                            </p>
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">التكلفة الفعلية:</dt>
+                            <dd class="text-sm font-medium text-red-600">
+                                {{ stage.actual_cost|floatformat:2|intcomma }} ج.م
+                            </dd>
                         </div>
-                        
-                        <div>
-                            <p class="text-sm text-gray-500">المبلغ الموزع</p>
-                            <p class="text-lg font-semibold text-gray-900">
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">الموزع:</dt>
+                            <dd class="text-sm font-medium text-purple-600">
                                 {{ stage.allocated|floatformat:2|intcomma }} ج.م
-                            </p>
+                            </dd>
                         </div>
-                        
-                        {% if stage.delta > 0 %}
-                        <div class="pt-3 border-t">
-                            <p class="text-sm text-gray-500">Delta (غير موزع)</p>
-                            <p class="text-lg font-bold text-primary-600">
+                        <div class="flex justify-between">
+                            <dt class="text-sm text-gray-500">Delta:</dt>
+                            <dd class="text-sm font-bold {% if stage.delta > 0 %}text-orange-600{% else %}text-green-600{% endif %}">
                                 {{ stage.delta|floatformat:2|intcomma }} ج.م
-                            </p>
+                            </dd>
                         </div>
-                        {% endif %}
-                    </div>
+                    </dl>
                     
-                    <div class="mt-6 flex space-x-reverse space-x-2">
-                        <a href="{% url 'projects:stage_detail' project.id stage.id %}" 
-                           class="flex-1 text-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    <!-- Dates -->
+                    <div class="mt-4 pt-4 border-t border-gray-200">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>
+                                <i class="fas fa-calendar-alt ml-1"></i>
+                                البداية: {{ stage.start_date|default:"غير محدد" }}
+                            </span>
+                            <span>
+                                <i class="fas fa-calendar-check ml-1"></i>
+                                النهاية: {{ stage.end_date|default:"غير محدد" }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 px-6 py-3">
+                    <div class="flex justify-between">
+                        <button onclick="viewStageDetails({{ stage.id }})" 
+                                class="text-sm text-primary-600 hover:text-primary-900 font-medium">
+                            <i class="fas fa-eye ml-1"></i>
                             التفاصيل
-                        </a>
+                        </button>
                         {% if stage.delta > 0 %}
                         <a href="{% url 'allocations:allocate' project.id stage.id %}" 
-                           class="flex-1 text-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                           class="text-sm text-orange-600 hover:text-orange-900 font-medium">
+                            <i class="fas fa-share-alt ml-1"></i>
                             توزيع Delta
                         </a>
                         {% endif %}
+                        <button onclick="addExpenseToStage({{ stage.id }})" 
+                                class="text-sm text-red-600 hover:text-red-900 font-medium">
+                            <i class="fas fa-plus-circle ml-1"></i>
+                            إضافة مصروف
+                        </button>
                     </div>
-                </div>
-            </div>
-            {% empty %}
-            <div class="col-span-full">
-                <div class="text-center py-12 bg-white rounded-lg shadow">
-                    <i class="fas fa-tasks text-6xl text-gray-300 mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">لا توجد مراحل</h3>
-                    <p class="text-gray-500 mb-4">ابدأ بإنشاء أول مرحلة للمشروع</p>
-                    <a href="{% url 'projects:create_stage' project.id %}" 
-                       class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
-                        <i class="fas fa-plus ml-2"></i>
-                        إنشاء مرحلة
-                    </a>
                 </div>
             </div>
             {% endfor %}
         </div>
+
+        <!-- Stage Expenses Table -->
+        <div class="mt-8 bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">آخر مصروفات المراحل</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المرحلة</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الفئة</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">البيان</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المبلغ</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for expense in recent_expenses %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ expense.date }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ expense.stage.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ expense.get_category_display }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                {{ expense.description|truncatewords:10 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                                {{ expense.amount|floatformat:2|intcomma }} ج.م
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if expense.is_allocated %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    موزع
+                                </span>
+                                {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    غير موزع
+                                </span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Add Stage Modal -->
+<div id="addStageModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">إضافة مرحلة جديدة</h3>
+        <form method="POST" action="{% url 'projects:add_stage' project.id %}">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label for="stage_name" class="block text-sm font-medium text-gray-700">اسم المرحلة</label>
+                    <input type="text" name="name" id="stage_name" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="stage_budget" class="block text-sm font-medium text-gray-700">الميزانية</label>
+                    <input type="number" name="budget" id="stage_budget" step="0.01" min="0" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="stage_description" class="block text-sm font-medium text-gray-700">الوصف</label>
+                    <textarea name="description" id="stage_description" rows="3"
+                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"></textarea>
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="closeAddStageModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    إلغاء
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddStageModal() {
+    document.getElementById('addStageModal').classList.remove('hidden');
+}
+
+function closeAddStageModal() {
+    document.getElementById('addStageModal').classList.add('hidden');
+}
+
+function viewStageDetails(stageId) {
+    window.location.href = `/projects/{{ project.id }}/stage/${stageId}/`;
+}
+
+function addExpenseToStage(stageId) {
+    window.location.href = `/expenses/{{ project.id }}/create/?stage=${stageId}`;
+}
+</script>
 {% endblock %}

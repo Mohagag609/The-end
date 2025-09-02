@@ -1,29 +1,295 @@
 {% extends 'base.html' %}
 {% load humanize %}
 
-{% block title %}{{ title|default:"الصفحة" }}{% endblock %}
+{% block title %}مواد المشروع - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="{% url 'dashboard:home' %}" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="{% url 'dashboard:project_dashboard' project.id %}" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="{% url 'inventory:list' project.id %}" class="text-gray-500 hover:text-gray-700">المخزون</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">المواد</li>
+    </ol>
+</nav>
+{% endblock %}
 
 {% block content %}
 <div class="py-6">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 class="text-2xl font-bold text-gray-900 mb-6">
-            <i class="fas fa-file ml-2"></i>
-            {{ title|default:"هذه الصفحة قيد الإنشاء" }}
-        </h1>
-        
-        <div class="bg-white shadow rounded-lg p-6">
-            <p class="text-gray-600">هذه الصفحة قيد التطوير وستكون متاحة قريباً.</p>
-            
-            {% if project %}
-            <div class="mt-4">
-                <a href="{% url 'dashboard:project_dashboard' project.id %}" 
-                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                    <i class="fas fa-arrow-right ml-2"></i>
-                    العودة للوحة التحكم
+        <!-- Header -->
+        <div class="md:flex md:items-center md:justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-boxes ml-2 text-indigo-600"></i>
+                مواد المشروع
+            </h1>
+            <div class="mt-4 flex md:mt-0 md:mr-4 space-x-reverse space-x-2">
+                <a href="{% url 'inventory:issue' project.id %}" 
+                   class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    <i class="fas fa-arrow-up ml-2"></i>
+                    صرف مواد
                 </a>
+                <button onclick="openAddItemModal()" 
+                        class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                    <i class="fas fa-plus ml-2"></i>
+                    إضافة صنف
+                </button>
             </div>
-            {% endif %}
+        </div>
+
+        <!-- Filter -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <label for="filter_category" class="block text-sm font-medium text-gray-700">الفئة</label>
+                    <select id="filter_category" onchange="filterItems()"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">جميع الفئات</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="filter_warehouse" class="block text-sm font-medium text-gray-700">المخزن</label>
+                    <select id="filter_warehouse" onchange="filterItems()"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">جميع المخازن</option>
+                        {% for warehouse in warehouses %}
+                        <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="filter_status" class="block text-sm font-medium text-gray-700">الحالة</label>
+                    <select id="filter_status" onchange="filterItems()"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">الكل</option>
+                        <option value="available">متوفر</option>
+                        <option value="low">مخزون منخفض</option>
+                        <option value="out">نفذ المخزون</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="search" class="block text-sm font-medium text-gray-700">بحث</label>
+                    <input type="text" id="search" placeholder="اسم الصنف أو الكود"
+                           onkeyup="filterItems()"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+            </div>
+        </div>
+
+        <!-- Items Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {% for item in items %}
+            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow item-card"
+                 data-category="{{ item.category.id }}"
+                 data-name="{{ item.name|lower }}"
+                 data-sku="{{ item.sku|lower }}">
+                <div class="p-4">
+                    <!-- Item Header -->
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-900">{{ item.name }}</h3>
+                            <p class="text-xs text-gray-500">{{ item.sku }}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if item.stock_status == 'available' %}bg-green-100 text-green-800
+                            {% elif item.stock_status == 'low' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-red-100 text-red-800{% endif %}">
+                            {% if item.stock_status == 'available' %}متوفر
+                            {% elif item.stock_status == 'low' %}منخفض
+                            {% else %}نفذ{% endif %}
+                        </span>
+                    </div>
+                    
+                    <!-- Stock Info -->
+                    <div class="space-y-2 mb-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">الكمية:</span>
+                            <span class="font-medium {% if item.total_qty <= item.min_qty %}text-red-600{% else %}text-gray-900{% endif %}">
+                                {{ item.total_qty|floatformat:3 }} {{ item.get_uom_display }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">التكلفة:</span>
+                            <span class="font-medium text-gray-900">
+                                {{ item.std_cost|floatformat:2 }} ج.م
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">القيمة:</span>
+                            <span class="font-medium text-primary-600">
+                                {{ item.total_value|floatformat:2|intcomma }} ج.م
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <!-- Stock by Warehouse -->
+                    {% if item.warehouse_stock %}
+                    <div class="border-t pt-2">
+                        <p class="text-xs text-gray-500 mb-1">توزيع المخزون:</p>
+                        {% for ws in item.warehouse_stock %}
+                        <div class="flex justify-between text-xs">
+                            <span class="text-gray-600">{{ ws.warehouse }}:</span>
+                            <span class="font-medium">{{ ws.qty|floatformat:3 }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Actions -->
+                    <div class="mt-3 pt-3 border-t flex justify-between">
+                        <a href="{% url 'inventory:item_movements' project.id item.id %}" 
+                           class="text-xs text-blue-600 hover:text-blue-900">
+                            <i class="fas fa-history ml-1"></i>
+                            الحركات
+                        </a>
+                        {% if item.total_qty > 0 %}
+                        <a href="{% url 'inventory:issue' project.id %}?item={{ item.id }}" 
+                           class="text-xs text-red-600 hover:text-red-900">
+                            <i class="fas fa-arrow-up ml-1"></i>
+                            صرف
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Summary Statistics -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">إحصائيات المخزون</h2>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي الأصناف</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ totals.items_count }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">قيمة المخزون</p>
+                    <p class="text-2xl font-bold text-primary-600">
+                        {{ totals.total_value|floatformat:2|intcomma }} ج.م
+                    </p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">أصناف منخفضة</p>
+                    <p class="text-2xl font-bold text-yellow-600">{{ totals.low_stock_count }}</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">أصناف نفذت</p>
+                    <p class="text-2xl font-bold text-red-600">{{ totals.out_of_stock_count }}</p>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Add Item Modal -->
+<div id="addItemModal" class="hidden fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg p-6 max-w-md w-full max-h-screen overflow-y-auto">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">إضافة صنف جديد</h3>
+        <form method="POST" action="{% url 'inventory:add_item' project.id %}">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label for="item_name" class="block text-sm font-medium text-gray-700">اسم الصنف *</label>
+                    <input type="text" name="name" id="item_name" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="item_sku" class="block text-sm font-medium text-gray-700">الكود *</label>
+                    <input type="text" name="sku" id="item_sku" required
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="item_category" class="block text-sm font-medium text-gray-700">الفئة *</label>
+                    <select name="category" id="item_category" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="">اختر الفئة</option>
+                        {% for category in categories %}
+                        <option value="{{ category.id }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="item_uom" class="block text-sm font-medium text-gray-700">وحدة القياس *</label>
+                    <select name="uom" id="item_uom" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                        <option value="piece">قطعة</option>
+                        <option value="kg">كيلوجرام</option>
+                        <option value="ton">طن</option>
+                        <option value="m">متر</option>
+                        <option value="m2">متر مربع</option>
+                        <option value="m3">متر مكعب</option>
+                        <option value="liter">لتر</option>
+                        <option value="bag">كيس</option>
+                        <option value="box">صندوق</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="item_std_cost" class="block text-sm font-medium text-gray-700">التكلفة القياسية</label>
+                    <input type="number" name="std_cost" id="item_std_cost" step="0.0001" min="0"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="item_min_qty" class="block text-sm font-medium text-gray-700">الحد الأدنى</label>
+                    <input type="number" name="min_qty" id="item_min_qty" step="0.001" min="0" value="0"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="item_max_qty" class="block text-sm font-medium text-gray-700">الحد الأقصى</label>
+                    <input type="number" name="max_qty" id="item_max_qty" step="0.001" min="0" value="0"
+                           class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="closeAddItemModal()"
+                        class="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                    إلغاء
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openAddItemModal() {
+    document.getElementById('addItemModal').classList.remove('hidden');
+}
+
+function closeAddItemModal() {
+    document.getElementById('addItemModal').classList.add('hidden');
+}
+
+function filterItems() {
+    const category = document.getElementById('filter_category').value;
+    const warehouse = document.getElementById('filter_warehouse').value;
+    const status = document.getElementById('filter_status').value;
+    const search = document.getElementById('search').value.toLowerCase();
+    
+    const items = document.querySelectorAll('.item-card');
+    
+    items.forEach(item => {
+        let show = true;
+        
+        if (category && item.dataset.category !== category) {
+            show = false;
+        }
+        
+        if (search && !item.dataset.name.includes(search) && !item.dataset.sku.includes(search)) {
+            show = false;
+        }
+        
+        item.style.display = show ? 'block' : 'none';
+    });
+}
+</script>
 {% endblock %}

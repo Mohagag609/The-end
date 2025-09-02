@@ -85,6 +85,26 @@ def create_expense(request, project_id):
         
         stage = get_object_or_404(Stage, id=stage_id, project=project) if stage_id else None
         
+        # التحقق من توفر الأرصدة في محافظ الشركاء
+        from partners.models import ProjectPartner, WalletPriority, Voucher
+        partners = ProjectPartner.objects.filter(project=project)
+        
+        total_available = Decimal('0')
+        for partner in partners:
+            total_available += partner.wallet_balance + partner.credit_limit
+        
+        if amount > total_available:
+            messages.error(request, f'المبلغ المطلوب ({amount} ج.م) يتجاوز إجمالي الأرصدة المتاحة ({total_available} ج.م)')
+            stages = Stage.objects.filter(project=project)
+            context = {
+                'project': project,
+                'stages': stages,
+                'categories': Expense.CATEGORY_CHOICES,
+                'payee_types': Expense.PAYEE_TYPES,
+                'today': datetime.now().date()
+            }
+            return render(request, 'expenses/create.html', context)
+        
         expense = Expense.objects.create(
             project=project,
             stage=stage,
@@ -102,7 +122,61 @@ def create_expense(request, project_id):
             expense.attachment = request.FILES['attachment']
             expense.save()
         
-        messages.success(request, f'تم إضافة المصروف بقيمة {amount} بنجاح')
+        # خصم المبلغ من محافظ الشركاء حسب الأولوية
+        remaining_amount = amount
+        deductions = []
+        
+        # الخصم حسب الأولوية (1 ثم 2 ثم 3)
+        for priority in [1, 2, 3]:
+            if remaining_amount <= 0:
+                break
+            
+            # البحث عن المحافظ حسب الأولوية
+            priority_partners = []
+            for partner in partners:
+                wallet_priority = WalletPriority.objects.filter(
+                    project_partner=partner,
+                    priority=priority
+                ).first()
+                
+                if wallet_priority or priority == 3:  # الأولوية 3 افتراضية
+                    priority_partners.append(partner)
+            
+            # الخصم من كل محفظة في هذه الأولوية
+            for partner in priority_partners:
+                if remaining_amount <= 0:
+                    break
+                
+                available = partner.wallet_balance + partner.credit_limit
+                
+                if available > 0:
+                    deduct_amount = min(available, remaining_amount)
+                    
+                    # إنشاء سند صرف تلقائي
+                    voucher = Voucher.objects.create(
+                        project=project,
+                        type='payment',
+                        partner=partner.partner,
+                        project_partner=partner,
+                        amount=deduct_amount,
+                        date=date,
+                        description=f'خصم تلقائي - {description[:50]}',
+                        notes=f'مصروف #{expense.id} - {category}',
+                        is_auto=True
+                    )
+                    
+                    deductions.append({
+                        'partner': partner.partner.name,
+                        'amount': deduct_amount
+                    })
+                    
+                    remaining_amount -= deduct_amount
+        
+        if remaining_amount > 0:
+            messages.warning(request, f'تم خصم {amount - remaining_amount} ج.م فقط. المتبقي {remaining_amount} ج.م يحتاج لإيداعات إضافية')
+        else:
+            deduction_details = '، '.join([f'{d["partner"]}: {d["amount"]} ج.م' for d in deductions])
+            messages.success(request, f'تم إضافة المصروف وخصمه من المحافظ ({deduction_details})')
         
         if stage:
             messages.info(request, f'تم إضافة المصروف للمرحلة {stage.name}')

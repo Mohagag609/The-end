@@ -80,18 +80,86 @@ def stages_list(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     stages = Stage.objects.filter(project=project).order_by('created_at')
     
+    # حساب الإحصائيات
+    totals = {
+        'budget': Decimal('0'),
+        'cost': Decimal('0'),
+        'variance': Decimal('0'),
+        'completion': 0,
+    }
+    
+    stages_data = []
     for stage in stages:
-        stage.total_cost = stage.get_total_cost()
-        stage.allocated = stage.get_allocated_amount()
-        stage.delta = stage.get_delta()
-        stage.is_over = stage.is_over_budget()
+        actual_cost = stage.get_total_cost()
+        allocated = stage.get_allocated_amount()
+        delta = stage.get_delta()
+        progress = min(100, (actual_cost / stage.budget * 100) if stage.budget > 0 else 0)
+        
+        stages_data.append({
+            'id': stage.id,
+            'name': stage.name,
+            'description': stage.description,
+            'budget': stage.budget or Decimal('0'),
+            'actual_cost': actual_cost,
+            'allocated': allocated,
+            'delta': delta,
+            'progress': progress,
+            'start_date': stage.start_date,
+            'end_date': stage.end_date,
+        })
+        
+        totals['budget'] += stage.budget or Decimal('0')
+        totals['cost'] += actual_cost
+    
+    totals['variance'] = totals['budget'] - totals['cost']
+    totals['completion'] = (totals['cost'] / totals['budget'] * 100) if totals['budget'] > 0 else 0
+    
+    # آخر المصروفات
+    from expenses.models import Expense
+    recent_expenses = Expense.objects.filter(
+        project=project,
+        stage__isnull=False
+    ).select_related('stage').order_by('-date')[:10]
+    
+    # المخازن
+    warehouses = Warehouse.objects.filter(project=project, is_active=True)
+    
+    # الفئات
+    from inventory.models import ItemCategory
+    categories = ItemCategory.objects.all()
     
     context = {
         'project': project,
-        'stages': stages,
+        'stages': stages_data,
+        'totals': totals,
+        'recent_expenses': recent_expenses,
+        'warehouses': warehouses,
+        'categories': categories,
     }
     
     return render(request, 'projects/stages.html', context)
+
+def add_stage(request, project_id):
+    """إضافة مرحلة جديدة"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        budget = Decimal(request.POST.get('budget', '0'))
+        description = request.POST.get('description', '')
+        
+        stage = Stage.objects.create(
+            project=project,
+            name=name,
+            budget=budget,
+            description=description,
+            status='pending'
+        )
+        
+        messages.success(request, f'تم إضافة المرحلة "{name}" بنجاح')
+        return redirect('projects:stages', project_id=project.id)
+    
+    return redirect('projects:stages', project_id=project.id)
 
 def create_stage(request, project_id):
     """إنشاء مرحلة جديدة"""
