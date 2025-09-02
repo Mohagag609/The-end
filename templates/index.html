@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}المشاريع - Musharaka Pro{% endblock %}
+
+{% block content %}
+<div class="mb-8">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-900">المشاريع</h1>
+        <button onclick="document.getElementById('newProjectModal').classList.remove('hidden')" 
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            + مشروع جديد
+        </button>
+    </div>
+</div>
+
+<!-- Projects Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for project in projects %}
+    <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow">
+        <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+                <div>
+                    <h3 class="text-xl font-semibold text-gray-900">{{ project.name }}</h3>
+                    <p class="text-sm text-gray-500">كود: {{ project.code }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full 
+                    {% if project.status == 'open' %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {% if project.status == 'open' %}مفتوح{% else %}مغلق{% endif %}
+                </span>
+            </div>
+            
+            <div class="space-y-2 mb-4">
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">عدد الشركاء:</span>
+                    <span class="font-medium">{{ project.partner_count }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">عدد المراحل:</span>
+                    <span class="font-medium">{{ project.stage_count }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                    <span class="text-gray-600">إجمالي الإنفاق:</span>
+                    <span class="font-medium">{{ "{:,.2f}".format(project.total_spent) }} جنيه</span>
+                </div>
+            </div>
+            
+            <a href="/project/{{ project.id }}" 
+               class="block w-full text-center bg-gray-100 text-gray-700 py-2 rounded-lg hover:bg-gray-200 transition">
+                دخول المشروع
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+    
+    {% if not projects %}
+    <div class="col-span-full text-center py-12">
+        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V7a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+        </svg>
+        <h3 class="mt-2 text-sm font-medium text-gray-900">لا توجد مشاريع</h3>
+        <p class="mt-1 text-sm text-gray-500">ابدأ بإنشاء مشروع جديد</p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- New Project Modal -->
+<div id="newProjectModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">مشروع جديد</h3>
+            <form action="/project/new" method="POST">
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">كود المشروع</label>
+                    <input type="text" name="code" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="مثال: P001">
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">اسم المشروع</label>
+                    <input type="text" name="name" required 
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="مثال: مشروع البناء الأول">
+                </div>
+                <div class="flex justify-end space-x-reverse space-x-3">
+                    <button type="button" onclick="document.getElementById('newProjectModal').classList.add('hidden')"
+                            class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                        إلغاء
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        إنشاء
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

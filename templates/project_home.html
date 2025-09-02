@@ -1,0 +1,270 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - Musharaka Pro{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">{{ project.name }}</h1>
+            <p class="text-gray-500">كود: {{ project.code }}</p>
+        </div>
+        <div class="flex space-x-reverse space-x-3">
+            <a href="/project/{{ project.id }}/purchases" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                المشتريات والمخزون
+            </a>
+            <a href="/project/{{ project.id }}/settlements" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                التسويات
+            </a>
+            <a href="/project/{{ project.id }}/wallets" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                نظرة المحافظ
+            </a>
+            <a href="/project/{{ project.id }}/priority" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                إعداد الخصم
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Partners & Wallets Section -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold text-gray-900">الشركاء والمحافظ</h2>
+        <button onclick="document.getElementById('addPartnerModal').classList.remove('hidden')" 
+                class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition text-sm">
+            + إضافة شريك
+        </button>
+    </div>
+    
+    {% if not shares_valid %}
+    <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-4">
+        <p class="font-medium">⚠️ تحذير: مجموع الحصص ({{ "{:.2f}".format(total_shares) }}%) لا يساوي 100%</p>
+    </div>
+    {% endif %}
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الشريك</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النسبة %</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رصيد المحفظة</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الرصيد المرحل</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for pp in partners %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ pp.partner.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ "{:.2f}".format(pp.share_pct) }}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ "{:,.2f}".format(pp.wallet_balance) }} جنيه</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ "{:,.2f}".format(pp.carry_forward_balance) }} جنيه</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <button onclick="openDepositModal({{ pp.partner.id }}, '{{ pp.partner.name }}')" 
+                                class="text-green-600 hover:text-green-900 ml-2">إيداع</button>
+                        <button onclick="openWithdrawModal({{ pp.partner.id }}, '{{ pp.partner.name }}')" 
+                                class="text-red-600 hover:text-red-900 ml-2">سحب</button>
+                        <a href="/project/{{ project.id }}/report/partner/{{ pp.partner.id }}" 
+                           class="text-blue-600 hover:text-blue-900 ml-2">كشف حساب</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Stages Section -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold text-gray-900">المراحل</h2>
+        <button onclick="document.getElementById('addStageModal').classList.remove('hidden')" 
+                class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 transition text-sm">
+            + إضافة مرحلة
+        </button>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for stage in stages %}
+        <div class="border rounded-lg p-4">
+            <h3 class="font-semibold text-gray-900 mb-2">{{ stage.name }}</h3>
+            <div class="space-y-1 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-600">الميزانية:</span>
+                    <span>{{ "{:,.2f}".format(stage.budget) }} جنيه</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">التكلفة الفعلية:</span>
+                    <span>{{ "{:,.2f}".format(stage.total_cost) }} جنيه</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-600">تم توزيعه:</span>
+                    <span>{{ "{:,.2f}".format(stage.allocated) }} جنيه</span>
+                </div>
+                <div class="flex justify-between font-semibold">
+                    <span class="text-gray-600">Delta:</span>
+                    <span class="{% if stage.delta > 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                        {{ "{:,.2f}".format(stage.delta) }} جنيه
+                    </span>
+                </div>
+            </div>
+            {% if stage.delta > 0 and shares_valid %}
+            <form action="/project/{{ project.id }}/stage/{{ stage.id }}/allocate" method="POST" class="mt-3">
+                <input type="hidden" name="rule" value="by_share">
+                <button type="submit" class="w-full bg-orange-500 text-white py-1 rounded hover:bg-orange-600 transition text-sm">
+                    توزيع بالحصة
+                </button>
+            </form>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Quick Expense Section -->
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">مصروف سريع</h2>
+    <form action="/project/{{ project.id }}/expense/quick" method="POST" class="flex gap-3">
+        <select name="stage_id" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option value="">بدون مرحلة</option>
+            {% for stage in stages %}
+            <option value="{{ stage.id }}">{{ stage.name }}</option>
+            {% endfor %}
+        </select>
+        <input type="number" name="amount" step="0.01" required placeholder="المبلغ" 
+               class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <input type="text" name="description" required placeholder="الوصف" 
+               class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+            إضافة
+        </button>
+    </form>
+</div>
+
+<!-- Add Partner Modal -->
+<div id="addPartnerModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">إضافة شريك</h3>
+        <form action="/project/{{ project.id }}/add_partner" method="POST">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">اسم الشريك</label>
+                <input type="text" name="partner_name" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">نسبة الحصة %</label>
+                <input type="number" name="share_pct" step="0.01" min="0" max="100" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('addPartnerModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Add Stage Modal -->
+<div id="addStageModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">إضافة مرحلة</h3>
+        <form action="/project/{{ project.id }}/stage/new" method="POST">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">اسم المرحلة</label>
+                <input type="text" name="name" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">الميزانية</label>
+                <input type="number" name="budget" step="0.01" min="0" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('addStageModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Deposit Modal -->
+<div id="depositModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">إيداع في محفظة <span id="depositPartnerName"></span></h3>
+        <form id="depositForm" method="POST">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المبلغ</label>
+                <input type="number" name="amount" step="0.01" min="0" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">ملاحظات</label>
+                <textarea name="notes" rows="2" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('depositModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                    إيداع
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Withdraw Modal -->
+<div id="withdrawModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">سحب من محفظة <span id="withdrawPartnerName"></span></h3>
+        <form id="withdrawForm" method="POST">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المبلغ</label>
+                <input type="number" name="amount" step="0.01" min="0" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">ملاحظات</label>
+                <textarea name="notes" rows="2" 
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+            </div>
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('withdrawModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                    سحب
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openDepositModal(partnerId, partnerName) {
+    document.getElementById('depositPartnerName').textContent = partnerName;
+    document.getElementById('depositForm').action = `/project/{{ project.id }}/wallet/${partnerId}/deposit`;
+    document.getElementById('depositModal').classList.remove('hidden');
+}
+
+function openWithdrawModal(partnerId, partnerName) {
+    document.getElementById('withdrawPartnerName').textContent = partnerName;
+    document.getElementById('withdrawForm').action = `/project/{{ project.id }}/wallet/${partnerId}/withdraw`;
+    document.getElementById('withdrawModal').classList.remove('hidden');
+}
+</script>
+{% endblock %}

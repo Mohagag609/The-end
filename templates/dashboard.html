@@ -1,0 +1,179 @@
+{% extends "layout.html" %}
+
+{% block title %}لوحة التحكم - {{ current_project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">لوحة التحكم</h1>
+    <p class="text-gray-600 mt-1">نظرة عامة على مشروع {{ current_project.name }}</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="flex-1">
+                <p class="text-sm text-gray-600">عدد الشركاء</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.partners_count }}</p>
+            </div>
+            <div class="p-3 bg-blue-100 rounded-lg">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+        </div>
+        {% if not shares_valid %}
+        <div class="mt-2 text-xs text-yellow-600">
+            ⚠️ مجموع الحصص {{ "{:.2f}".format(total_shares) }}%
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="flex-1">
+                <p class="text-sm text-gray-600">عدد المراحل</p>
+                <p class="text-2xl font-bold text-gray-900">{{ stats.stages_count }}</p>
+            </div>
+            <div class="p-3 bg-green-100 rounded-lg">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="flex-1">
+                <p class="text-sm text-gray-600">إجمالي المصروفات</p>
+                <p class="text-2xl font-bold text-gray-900">{{ "{:,.0f}".format(stats.total_expenses) }}</p>
+                <p class="text-xs text-gray-500">جنيه</p>
+            </div>
+            <div class="p-3 bg-red-100 rounded-lg">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-6">
+        <div class="flex items-center">
+            <div class="flex-1">
+                <p class="text-sm text-gray-600">رصيد المحافظ</p>
+                <p class="text-2xl font-bold {% if stats.total_wallets < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                    {{ "{:,.0f}".format(stats.total_wallets) }}
+                </p>
+                <p class="text-xs text-gray-500">جنيه</p>
+            </div>
+            <div class="p-3 bg-purple-100 rounded-lg">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                </svg>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+    <!-- Partners Share Chart -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">توزيع الحصص</h2>
+        <div class="space-y-3">
+            {% for partner in partners %}
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>{{ partner.partner.name }}</span>
+                    <span class="font-medium">{{ "{:.2f}".format(partner.share_pct) }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full" style="width: {{ partner.share_pct }}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Stages Progress -->
+    <div class="bg-white rounded-lg shadow p-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">تقدم المراحل</h2>
+        <div class="space-y-3">
+            {% for stage in stages[:5] %}
+            <div>
+                <div class="flex justify-between text-sm mb-1">
+                    <span>{{ stage.name }}</span>
+                    <span class="font-medium">{{ "{:,.0f}".format(stage.total_cost) }} / {{ "{:,.0f}".format(stage.budget) }}</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-green-600 h-2 rounded-full" 
+                         style="width: {% if stage.budget > 0 %}{{ min(100, (stage.total_cost / stage.budget * 100)) }}{% else %}0{% endif %}%"></div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activities -->
+<div class="bg-white rounded-lg shadow">
+    <div class="p-6 border-b">
+        <h2 class="text-lg font-semibold text-gray-900">النشاطات الأخيرة</h2>
+    </div>
+    <div class="divide-y">
+        {% for activity in recent_activities %}
+        <div class="p-4 hover:bg-gray-50">
+            <div class="flex items-center">
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-900">{{ activity.description }}</p>
+                    <p class="text-xs text-gray-500">{{ activity.date }}</p>
+                </div>
+                <span class="px-2 py-1 text-xs rounded-full 
+                    {% if activity.type == 'deposit' %}bg-green-100 text-green-800
+                    {% elif activity.type == 'withdraw' %}bg-red-100 text-red-800
+                    {% elif activity.type == 'expense' %}bg-orange-100 text-orange-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {{ activity.type_label }}
+                </span>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+    <a href="/project/{{ current_project.id }}/partners" 
+       class="bg-white rounded-lg shadow p-4 hover:shadow-md transition text-center">
+        <svg class="w-8 h-8 text-blue-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        <p class="text-sm font-medium">إضافة شريك</p>
+    </a>
+    
+    <a href="/project/{{ current_project.id }}/stages" 
+       class="bg-white rounded-lg shadow p-4 hover:shadow-md transition text-center">
+        <svg class="w-8 h-8 text-green-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <p class="text-sm font-medium">إضافة مرحلة</p>
+    </a>
+    
+    <a href="/project/{{ current_project.id }}/expenses" 
+       class="bg-white rounded-lg shadow p-4 hover:shadow-md transition text-center">
+        <svg class="w-8 h-8 text-red-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+        </svg>
+        <p class="text-sm font-medium">إضافة مصروف</p>
+    </a>
+    
+    <a href="/project/{{ current_project.id }}/reports" 
+       class="bg-white rounded-lg shadow p-4 hover:shadow-md transition text-center">
+        <svg class="w-8 h-8 text-purple-600 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v1a1 1 0 001 1h4a1 1 0 001-1v-1m3-2V8a2 2 0 00-2-2H8a2 2 0 00-2 2v7m3-2h6"></path>
+        </svg>
+        <p class="text-sm font-medium">التقارير</p>
+    </a>
+</div>
+{% endblock %}

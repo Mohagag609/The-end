@@ -1,0 +1,9 @@
+Flask==3.0.3
+Flask-SQLAlchemy==3.1.1
+SQLAlchemy==2.0.36
+psycopg2-binary
+python-dateutil==2.9.0
+python-dotenv==1.0.1
+gunicorn==23.0.0
+Jinja2==3.1.4
+Werkzeug==3.0.6

@@ -1,0 +1,483 @@
+{% extends "layout.html" %}
+
+{% block title %}التوزيعات - {{ current_project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6 flex justify-between items-center">
+    <div>
+        <h1 class="text-2xl font-bold text-gray-900">التوزيعات</h1>
+        <p class="text-gray-600 mt-1">توزيع تكاليف المراحل على الشركاء</p>
+    </div>
+    <button onclick="document.getElementById('newAllocationModal').classList.remove('hidden')" 
+            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
+        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        توزيع جديد
+    </button>
+</div>
+
+<!-- Info Alert -->
+<div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+    <div class="flex">
+        <svg class="w-5 h-5 text-blue-600 ml-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+        </svg>
+        <div>
+            <h3 class="text-sm font-medium text-blue-800">ما هي التوزيعات؟</h3>
+            <p class="mt-1 text-sm text-blue-700">
+                التوزيعات هي عملية توزيع تكاليف المراحل (مصروفات ومشتريات) على الشركاء حسب نسبهم أو بشكل مخصص.
+                يتم خصم المبالغ من محافظ الشركاء عند ترحيل التوزيع.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm text-gray-600">إجمالي التوزيعات</p>
+                <p class="text-xl font-bold text-gray-900">
+                    {{ "{:,.0f}".format(allocations|selectattr('posted', 'equalto', True)|sum(attribute='total_amount')) }}
+                </p>
+                <p class="text-xs text-gray-500">جنيه</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm text-gray-600">توزيعات مرحلة</p>
+                <p class="text-xl font-bold text-green-600">
+                    {{ allocations|selectattr('posted', 'equalto', True)|list|length }}
+                </p>
+                <p class="text-xs text-gray-500">توزيع</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 bg-yellow-100 rounded-lg p-3">
+                <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm text-gray-600">توزيعات معلقة</p>
+                <p class="text-xl font-bold text-yellow-600">
+                    {{ allocations|selectattr('posted', 'equalto', False)|list|length }}
+                </p>
+                <p class="text-xs text-gray-500">توزيع</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="bg-white rounded-lg shadow p-4">
+        <div class="flex items-center">
+            <div class="flex-shrink-0 bg-purple-100 rounded-lg p-3">
+                <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+            </div>
+            <div class="mr-4">
+                <p class="text-sm text-gray-600">عدد المراحل</p>
+                <p class="text-xl font-bold text-purple-600">
+                    {{ stages|length }}
+                </p>
+                <p class="text-xs text-gray-500">مرحلة</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Allocations by Stage -->
+<div class="bg-white rounded-lg shadow mb-6">
+    <div class="p-6 border-b">
+        <h2 class="text-lg font-semibold text-gray-900">التوزيعات حسب المرحلة</h2>
+    </div>
+    <div class="p-6">
+        <div class="space-y-4">
+            {% for stage in stages %}
+            <div class="border rounded-lg p-4 hover:bg-gray-50">
+                <div class="flex justify-between items-start">
+                    <div class="flex-1">
+                        <h3 class="font-medium text-gray-900">{{ stage.name }}</h3>
+                        <p class="text-sm text-gray-500 mt-1">{{ stage.description or 'لا يوجد وصف' }}</p>
+                        <div class="flex items-center mt-2 space-x-reverse space-x-4">
+                            <span class="text-sm">
+                                <span class="text-gray-500">التكلفة الكلية:</span>
+                                <span class="font-medium text-gray-900">{{ "{:,.2f}".format(stage.total_cost) }} جنيه</span>
+                            </span>
+                            <span class="text-sm">
+                                <span class="text-gray-500">الموزع:</span>
+                                <span class="font-medium text-blue-600">{{ "{:,.2f}".format(stage.allocated_amount) }} جنيه</span>
+                            </span>
+                            <span class="text-sm">
+                                <span class="text-gray-500">المتبقي:</span>
+                                <span class="font-medium {% if stage.remaining_amount > 0 %}text-orange-600{% else %}text-green-600{% endif %}">
+                                    {{ "{:,.2f}".format(stage.remaining_amount) }} جنيه
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mr-4">
+                        {% if stage.remaining_amount > 0 %}
+                        <button onclick="allocateStage({{ stage.id }}, '{{ stage.name }}', {{ stage.remaining_amount }})" 
+                                class="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 transition text-sm">
+                            توزيع
+                        </button>
+                        {% else %}
+                        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <svg class="w-4 h-4 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            موزع بالكامل
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if not stages %}
+        <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <p class="text-gray-500">لا توجد مراحل في المشروع</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Allocations History -->
+<div class="bg-white rounded-lg shadow">
+    <div class="p-6 border-b">
+        <h2 class="text-lg font-semibold text-gray-900">سجل التوزيعات</h2>
+    </div>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المرحلة</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">نوع التوزيع</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ الكلي</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for allocation in allocations %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ allocation.alloc_date.strftime('%Y-%m-%d') }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                            {{ allocation.stage.name }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 py-1 text-xs rounded-full 
+                            {% if allocation.rule == 'by_share' %}bg-green-100 text-green-800
+                            {% else %}bg-purple-100 text-purple-800{% endif %}">
+                            {% if allocation.rule == 'by_share' %}
+                                <svg class="w-3 h-3 inline ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z"></path>
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clip-rule="evenodd"></path>
+                                </svg>
+                                حسب النسبة
+                            {% else %}
+                                <svg class="w-3 h-3 inline ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"></path>
+                                </svg>
+                                توزيع مخصص
+                            {% endif %}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {{ "{:,.2f}".format(allocation.total_amount) }} جنيه
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if allocation.posted %}
+                        <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                            <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                            مرحل
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                            <svg class="w-3 h-3 ml-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"></path>
+                            </svg>
+                            معلق
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <button onclick="showAllocationDetails({{ allocation.id }})" 
+                                class="text-blue-600 hover:text-blue-900 ml-2">
+                            التفاصيل
+                        </button>
+                        {% if not allocation.posted %}
+                        <button onclick="postAllocation({{ allocation.id }})" 
+                                class="text-green-600 hover:text-green-900">
+                            ترحيل
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        {% if not allocations %}
+        <div class="text-center py-12">
+            <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+            </svg>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">لا توجد توزيعات</h3>
+            <p class="text-gray-500 mb-4">لم يتم إجراء أي توزيعات بعد</p>
+            <button onclick="document.getElementById('newAllocationModal').classList.remove('hidden')" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                إنشاء أول توزيع
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- New Allocation Modal -->
+<div id="newAllocationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[600px] shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">توزيع جديد</h3>
+        <form action="/project/{{ current_project.id }}/allocate" method="POST" id="allocationForm">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المرحلة *</label>
+                <select name="stage_id" required onchange="updateStageInfo(this.value)"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">اختر المرحلة</option>
+                    {% for stage in stages %}
+                    {% if stage.remaining_amount > 0 %}
+                    <option value="{{ stage.id }}" data-remaining="{{ stage.remaining_amount }}">
+                        {{ stage.name }} (متبقي: {{ "{:,.2f}".format(stage.remaining_amount) }} جنيه)
+                    </option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المبلغ المراد توزيعه *</label>
+                <input type="number" name="amount" step="0.01" min="0" required id="allocationAmount"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="0.00">
+                <p class="mt-1 text-xs text-gray-500" id="remainingInfo"></p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">نوع التوزيع *</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <label class="relative flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="rule" value="by_share" checked onchange="toggleCustomAllocation(false)"
+                               class="ml-2">
+                        <div>
+                            <p class="font-medium">حسب النسبة</p>
+                            <p class="text-xs text-gray-500">توزيع تلقائي حسب نسب الشركاء</p>
+                        </div>
+                    </label>
+                    <label class="relative flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                        <input type="radio" name="rule" value="custom" onchange="toggleCustomAllocation(true)"
+                               class="ml-2">
+                        <div>
+                            <p class="font-medium">توزيع مخصص</p>
+                            <p class="text-xs text-gray-500">تحديد مبلغ كل شريك يدوياً</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+            
+            <div id="customAllocationDiv" class="mb-4 hidden">
+                <label class="block text-sm font-medium text-gray-700 mb-2">توزيع المبالغ على الشركاء</label>
+                <div class="space-y-2">
+                    {% for pp in partners %}
+                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                        <label class="text-sm font-medium">{{ pp.partner.name }}</label>
+                        <input type="number" name="custom_{{ pp.partner.id }}" step="0.01" min="0"
+                               class="w-32 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="0.00" onchange="updateCustomTotal()">
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="mt-2 text-sm">
+                    <span class="text-gray-500">المجموع:</span>
+                    <span id="customTotal" class="font-medium">0.00</span> جنيه
+                </p>
+            </div>
+            
+            <div class="mb-4">
+                <label class="flex items-center">
+                    <input type="checkbox" name="post_immediately" class="ml-2 rounded">
+                    <span class="text-sm text-gray-700">ترحيل مباشرة (خصم من المحافظ)</span>
+                </label>
+            </div>
+            
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('newAllocationModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    إنشاء التوزيع
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Allocation Details Modal -->
+<div id="allocationDetailsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-[500px] shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">تفاصيل التوزيع</h3>
+        <div id="allocationDetailsContent">
+            <!-- سيتم ملؤها بـ JavaScript -->
+        </div>
+        <div class="mt-4 flex justify-end">
+            <button onclick="document.getElementById('allocationDetailsModal').classList.add('hidden')"
+                    class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                إغلاق
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Partners data for custom allocation
+const partnersData = [
+    {% for pp in partners %}
+    {id: {{ pp.partner.id }}, name: '{{ pp.partner.name }}', share: {{ pp.share_pct }}},
+    {% endfor %}
+];
+
+// Allocations details
+const allocationsDetails = {
+    {% for allocation in allocations %}
+    {{ allocation.id }}: {
+        date: '{{ allocation.alloc_date.strftime('%Y-%m-%d') }}',
+        stage: '{{ allocation.stage.name }}',
+        rule: '{{ allocation.rule }}',
+        total: {{ allocation.total_amount }},
+        posted: {{ 'true' if allocation.posted else 'false' }},
+        details: {{ allocation.details_json|safe if allocation.details_json else '{}' }}
+    },
+    {% endfor %}
+};
+
+function updateStageInfo(stageId) {
+    const select = document.querySelector('select[name="stage_id"]');
+    const option = select.options[select.selectedIndex];
+    const remaining = option ? parseFloat(option.dataset.remaining || 0) : 0;
+    
+    document.getElementById('remainingInfo').textContent = 
+        remaining > 0 ? `المبلغ المتبقي للتوزيع: ${remaining.toFixed(2)} جنيه` : '';
+    document.getElementById('allocationAmount').max = remaining;
+}
+
+function toggleCustomAllocation(show) {
+    const div = document.getElementById('customAllocationDiv');
+    if (show) {
+        div.classList.remove('hidden');
+    } else {
+        div.classList.add('hidden');
+    }
+}
+
+function updateCustomTotal() {
+    let total = 0;
+    document.querySelectorAll('input[name^="custom_"]').forEach(input => {
+        total += parseFloat(input.value || 0);
+    });
+    document.getElementById('customTotal').textContent = total.toFixed(2);
+}
+
+function allocateStage(stageId, stageName, remaining) {
+    document.querySelector('select[name="stage_id"]').value = stageId;
+    updateStageInfo(stageId);
+    document.getElementById('allocationAmount').value = remaining;
+    document.getElementById('newAllocationModal').classList.remove('hidden');
+}
+
+function showAllocationDetails(allocationId) {
+    const allocation = allocationsDetails[allocationId];
+    if (!allocation) return;
+    
+    let html = `
+        <div class="space-y-3">
+            <div class="flex justify-between py-2 border-b">
+                <span class="text-sm text-gray-500">التاريخ:</span>
+                <span class="text-sm font-medium">${allocation.date}</span>
+            </div>
+            <div class="flex justify-between py-2 border-b">
+                <span class="text-sm text-gray-500">المرحلة:</span>
+                <span class="text-sm font-medium">${allocation.stage}</span>
+            </div>
+            <div class="flex justify-between py-2 border-b">
+                <span class="text-sm text-gray-500">نوع التوزيع:</span>
+                <span class="text-sm font-medium">${allocation.rule === 'by_share' ? 'حسب النسبة' : 'مخصص'}</span>
+            </div>
+            <div class="flex justify-between py-2 border-b">
+                <span class="text-sm text-gray-500">المبلغ الكلي:</span>
+                <span class="text-sm font-medium">${allocation.total.toFixed(2)} جنيه</span>
+            </div>
+            <div class="flex justify-between py-2 border-b">
+                <span class="text-sm text-gray-500">الحالة:</span>
+                <span class="text-sm font-medium">${allocation.posted ? 'مرحل' : 'معلق'}</span>
+            </div>
+            <h4 class="font-medium text-gray-900 mt-4 mb-2">توزيع المبالغ:</h4>
+            <div class="space-y-2">
+    `;
+    
+    // Add partner allocations
+    for (const [partnerId, amount] of Object.entries(allocation.details)) {
+        const partner = partnersData.find(p => p.id == partnerId);
+        if (partner) {
+            html += `
+                <div class="flex justify-between p-2 bg-gray-50 rounded">
+                    <span class="text-sm">${partner.name}</span>
+                    <span class="text-sm font-medium">${parseFloat(amount).toFixed(2)} جنيه</span>
+                </div>
+            `;
+        }
+    }
+    
+    html += '</div></div>';
+    
+    document.getElementById('allocationDetailsContent').innerHTML = html;
+    document.getElementById('allocationDetailsModal').classList.remove('hidden');
+}
+
+function postAllocation(allocationId) {
+    if (confirm('هل أنت متأكد من ترحيل هذا التوزيع؟ سيتم خصم المبالغ من محافظ الشركاء.')) {
+        // TODO: Implement post allocation
+        window.location.href = `/project/{{ current_project.id }}/allocation/${allocationId}/post`;
+    }
+}
+</script>
+{% endblock %}

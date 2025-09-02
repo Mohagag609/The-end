@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+
+{% block title %}المشتريات والمخزون - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">المشتريات والمخزون</h1>
+            <p class="text-gray-500">{{ project.name }}</p>
+        </div>
+        <a href="/project/{{ project.id }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+            رجوع للمشروع
+        </a>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Purchase Invoice Section -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">فاتورة شراء جديدة</h2>
+        <form action="/project/{{ project.id }}/purchase/new" method="POST">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المورد</label>
+                <select name="supplier_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">اختر المورد</option>
+                    {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المخزن</label>
+                <select name="warehouse_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">تاريخ الفاتورة</label>
+                <input type="date" name="invoice_date" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">الأصناف</label>
+                <div id="itemsContainer">
+                    <div class="item-row mb-2">
+                        <div class="flex gap-2">
+                            <select name="item_id[]" class="flex-1 px-2 py-1 border border-gray-300 rounded">
+                                <option value="">اختر الصنف</option>
+                                {% for item in items %}
+                                <option value="{{ item.id }}">{{ item.name }} ({{ item.sku }})</option>
+                                {% endfor %}
+                            </select>
+                            <input type="number" name="qty[]" step="0.001" placeholder="الكمية" 
+                                   class="w-24 px-2 py-1 border border-gray-300 rounded">
+                            <input type="number" name="cost[]" step="0.01" placeholder="السعر" 
+                                   class="w-24 px-2 py-1 border border-gray-300 rounded">
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="addItemRow()" class="mt-2 text-blue-600 hover:text-blue-800 text-sm">
+                    + إضافة صنف آخر
+                </button>
+            </div>
+            
+            <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition">
+                حفظ الفاتورة
+            </button>
+        </form>
+    </div>
+    
+    <!-- Stock Issue Section -->
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">صرف مخزون لمرحلة</h2>
+        <form action="/project/{{ project.id }}/stock/issue" method="POST">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المخزن</label>
+                <select name="warehouse_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    {% for warehouse in warehouses %}
+                    <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">الصنف</label>
+                <select name="item_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">اختر الصنف</option>
+                    {% for item in items %}
+                    <option value="{{ item.id }}">{{ item.name }} ({{ item.sku }}) - {{ item.std_cost }} جنيه</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">المرحلة</label>
+                <select name="stage_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="">اختر المرحلة</option>
+                    {% for stage in project.stages %}
+                    <option value="{{ stage.id }}">{{ stage.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">الكمية</label>
+                <input type="number" name="qty" step="0.001" min="0" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            
+            <button type="submit" class="w-full bg-orange-500 text-white py-2 rounded-lg hover:bg-orange-600 transition">
+                صرف المخزون
+            </button>
+        </form>
+        
+        <div class="mt-6 pt-6 border-t">
+            <button onclick="document.getElementById('newItemModal').classList.remove('hidden')" 
+                    class="w-full bg-gray-200 text-gray-700 py-2 rounded-lg hover:bg-gray-300 transition">
+                + إضافة صنف جديد
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Invoices List -->
+<div class="mt-6 bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">فواتير الشراء</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المورد</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الإجمالي</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الحالة</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for invoice in invoices %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ invoice.invoice_date }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ invoice.supplier.name }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ "{:,.2f}".format(invoice.total) }} جنيه</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            مرحلة
+                        </span>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- New Item Modal -->
+<div id="newItemModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">صنف جديد</h3>
+        <form id="newItemForm">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">كود الصنف (SKU)</label>
+                <input type="text" name="sku" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">اسم الصنف</label>
+                <input type="text" name="name" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">وحدة القياس</label>
+                <input type="text" name="uom" value="unit" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">التكلفة القياسية</label>
+                <input type="number" name="std_cost" step="0.01" min="0" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('newItemModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    إضافة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function addItemRow() {
+    const container = document.getElementById('itemsContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'item-row mb-2';
+    newRow.innerHTML = `
+        <div class="flex gap-2">
+            <select name="item_id[]" class="flex-1 px-2 py-1 border border-gray-300 rounded">
+                <option value="">اختر الصنف</option>
+                {% for item in items %}
+                <option value="{{ item.id }}">{{ item.name }} ({{ item.sku }})</option>
+                {% endfor %}
+            </select>
+            <input type="number" name="qty[]" step="0.001" placeholder="الكمية" 
+                   class="w-24 px-2 py-1 border border-gray-300 rounded">
+            <input type="number" name="cost[]" step="0.01" placeholder="السعر" 
+                   class="w-24 px-2 py-1 border border-gray-300 rounded">
+            <button type="button" onclick="this.parentElement.parentElement.remove()" 
+                    class="text-red-600 hover:text-red-800">حذف</button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
+
+document.getElementById('newItemForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    
+    try {
+        const response = await fetch('/item/new', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const item = await response.json();
+            document.getElementById('newItemModal').classList.add('hidden');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'حدث خطأ');
+        }
+    } catch (error) {
+        alert('حدث خطأ في الاتصال');
+    }
+});
+</script>
+{% endblock %}
