@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}كشف حساب {{ partner.name }} - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">كشف حساب الشريك</h1>
+            <p class="text-gray-500">{{ partner.name }} - {{ project.name }}</p>
+        </div>
+        <div class="flex space-x-reverse space-x-3">
+            <button onclick="window.print()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                طباعة
+            </button>
+            <a href="/project/{{ project.id }}" 
+               class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                رجوع للمشروع
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Partner Info -->
+<div class="bg-white rounded-lg shadow-md p-6 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+            <p class="text-sm text-gray-600">الشريك</p>
+            <p class="text-lg font-semibold">{{ partner.name }}</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-600">نسبة الحصة</p>
+            <p class="text-lg font-semibold">{{ "{:.2f}".format(project_partner.share_pct) }}%</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-600">الرصيد المرحل السابق</p>
+            <p class="text-lg font-semibold">{{ "{:,.2f}".format(project_partner.carry_forward_balance) }} جنيه</p>
+        </div>
+        <div>
+            <p class="text-sm text-gray-600">رصيد المحفظة الحالي</p>
+            <p class="text-lg font-semibold {% if project_partner.wallet_balance < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                {{ "{:,.2f}".format(project_partner.wallet_balance) }} جنيه
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- Statement Table -->
+<div class="bg-white rounded-lg shadow-md p-6">
+    <h2 class="text-xl font-semibold text-gray-900 mb-4">الحركات</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النوع</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الوصف</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المرجع</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">مدين</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">دائن</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الرصيد</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% if project_partner.carry_forward_balance != 0 %}
+                <tr class="bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">رصيد مرحل</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">رصيد سابق مرحل</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">-</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if project_partner.carry_forward_balance < 0 %}{{ "{:,.2f}".format(-project_partner.carry_forward_balance) }}{% else %}-{% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {% if project_partner.carry_forward_balance > 0 %}{{ "{:,.2f}".format(project_partner.carry_forward_balance) }}{% else %}-{% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold">
+                        {{ "{:,.2f}".format(project_partner.carry_forward_balance) }}
+                    </td>
+                </tr>
+                {% endif %}
+                
+                {% for movement in movements %}
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ movement.date }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            {% if movement.type == 'إيداع' %}bg-green-100 text-green-800
+                            {% elif movement.type == 'سحب' %}bg-red-100 text-red-800
+                            {% else %}bg-orange-100 text-orange-800{% endif %}">
+                            {{ movement.type }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900">{{ movement.description }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ movement.ref }}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">
+                        {% if movement.debit > 0 %}{{ "{:,.2f}".format(movement.debit) }}{% else %}-{% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">
+                        {% if movement.credit > 0 %}{{ "{:,.2f}".format(movement.credit) }}{% else %}-{% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold 
+                        {% if movement.balance < 0 %}text-red-600{% else %}text-gray-900{% endif %}">
+                        {{ "{:,.2f}".format(movement.balance) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot class="bg-gray-50">
+                <tr>
+                    <td colspan="6" class="px-6 py-3 text-right font-semibold">الرصيد النهائي</td>
+                    <td class="px-6 py-3 whitespace-nowrap font-semibold text-lg 
+                        {% if final_balance < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                        {{ "{:,.2f}".format(final_balance) }} جنيه
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<style>
+@media print {
+    nav, footer, .no-print {
+        display: none;
+    }
+    .shadow-md {
+        box-shadow: none;
+        border: 1px solid #e5e7eb;
+    }
+}
+</style>
+{% endblock %}
