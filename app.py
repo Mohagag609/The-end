@@ -96,13 +96,18 @@ def new_project():
         db.session.commit()
         
         flash('تم إنشاء المشروع بنجاح', 'success')
-        return redirect(url_for('project_home', project_id=project.id))
+        return redirect(url_for('project_dashboard', project_id=project.id))
     
     return render_template('project_new.html')
 
 @app.route('/project/<int:project_id>')
-def project_home(project_id):
-    """الصفحة الرئيسية للمشروع"""
+def project_redirect(project_id):
+    """إعادة توجيه إلى لوحة التحكم"""
+    return redirect(url_for('project_dashboard', project_id=project_id))
+
+@app.route('/project/<int:project_id>/dashboard')
+def project_dashboard(project_id):
+    """لوحة التحكم الرئيسية للمشروع"""
     project = Project.query.get_or_404(project_id)
     partners = ProjectPartner.query.filter_by(project_id=project_id).all()
     stages = Stage.query.filter_by(project_id=project_id).all()
@@ -117,12 +122,81 @@ def project_home(project_id):
         stage.allocated = get_already_allocated(stage.id)
         stage.delta = stage.total_cost - stage.allocated
     
-    return render_template('project_home_improved.html', 
-                         project=project, 
+    # إحصائيات للوحة التحكم
+    stats = {
+        'partners_count': len(partners),
+        'stages_count': len(stages),
+        'total_expenses': sum(e.amount for e in project.expenses),
+        'total_wallets': sum(p.wallet_balance for p in partners)
+    }
+    
+    # النشاطات الأخيرة
+    recent_activities = []
+    
+    # جميع المشاريع للتبديل
+    all_projects = Project.query.all()
+    
+    return render_template('dashboard.html', 
+                         current_project=project,
+                         all_projects=all_projects,
                          partners=partners,
                          stages=stages,
                          total_shares=total_shares,
-                         shares_valid=shares_valid)
+                         shares_valid=shares_valid,
+                         stats=stats,
+                         recent_activities=recent_activities,
+                         active_page='dashboard')
+
+@app.route('/project/<int:project_id>/partners')
+def project_partners(project_id):
+    """صفحة الشركاء والمحافظ"""
+    project = Project.query.get_or_404(project_id)
+    partners = ProjectPartner.query.filter_by(project_id=project_id).all()
+    
+    # حساب مجموع الحصص
+    total_shares = sum(p.share_pct for p in partners)
+    shares_valid = abs(total_shares - Decimal('100.00')) < Decimal('0.01')
+    
+    # حساب الإحصائيات
+    total_deposits = Decimal('0')
+    total_withdrawals = Decimal('0')
+    total_balance = Decimal('0')
+    
+    for pp in partners:
+        # حساب الإيداعات والسحوبات لكل شريك
+        deposits = db.session.query(db.func.sum(Voucher.amount)).filter(
+            Voucher.project_id == project_id,
+            Voucher.party_id == pp.partner_id,
+            Voucher.v_type == 'receipt'
+        ).scalar() or Decimal('0')
+        
+        withdrawals = db.session.query(db.func.sum(Voucher.amount)).filter(
+            Voucher.project_id == project_id,
+            Voucher.party_id == pp.partner_id,
+            Voucher.v_type == 'payment'
+        ).scalar() or Decimal('0')
+        
+        pp.total_deposits = deposits
+        pp.total_withdrawals = withdrawals
+        pp.total_allocations = Decimal('0')  # يمكن حسابها لاحقاً
+        
+        total_deposits += deposits
+        total_withdrawals += withdrawals
+        total_balance += pp.wallet_balance
+    
+    # جميع المشاريع للتبديل
+    all_projects = Project.query.all()
+    
+    return render_template('partners_page.html',
+                         current_project=project,
+                         all_projects=all_projects,
+                         partners=partners,
+                         total_shares=total_shares,
+                         shares_valid=shares_valid,
+                         total_deposits=total_deposits,
+                         total_withdrawals=total_withdrawals,
+                         total_balance=total_balance,
+                         active_page='partners')
 
 @app.route('/project/<int:project_id>/add_partner', methods=['POST'])
 def add_partner(project_id):
@@ -166,7 +240,7 @@ def add_partner(project_id):
     else:
         flash('تم إضافة الشريك بنجاح', 'success')
     
-    return redirect(url_for('project_home', project_id=project_id))
+    return redirect(url_for('project_partners', project_id=project_id))
 
 @app.route('/project/<int:project_id>/wallet/<int:partner_id>/deposit', methods=['POST'])
 def wallet_deposit(project_id, partner_id):
@@ -197,7 +271,7 @@ def wallet_deposit(project_id, partner_id):
     db.session.commit()
     
     flash(f'تم الإيداع بنجاح: {amount} جنيه', 'success')
-    return redirect(url_for('project_home', project_id=project_id))
+    return redirect(url_for('project_partners', project_id=project_id))
 
 @app.route('/project/<int:project_id>/wallet/<int:partner_id>/withdraw', methods=['POST'])
 def wallet_withdraw(project_id, partner_id):
@@ -235,7 +309,7 @@ def wallet_withdraw(project_id, partner_id):
     db.session.commit()
     
     flash(f'تم السحب بنجاح: {amount} جنيه', 'success')
-    return redirect(url_for('project_home', project_id=project_id))
+    return redirect(url_for('project_partners', project_id=project_id))
 
 @app.route('/project/<int:project_id>/stage/new', methods=['POST'])
 def new_stage(project_id):
@@ -820,6 +894,86 @@ def api_items():
         'uom': i.uom,
         'std_cost': float(i.std_cost)
     } for i in items])
+
+@app.route('/project/<int:project_id>/stages')
+def project_stages(project_id):
+    """صفحة المراحل"""
+    project = Project.query.get_or_404(project_id)
+    stages = Stage.query.filter_by(project_id=project_id).all()
+    partners = ProjectPartner.query.filter_by(project_id=project_id).all()
+    
+    # حساب مجموع الحصص للتحقق من إمكانية التوزيع
+    total_shares = sum(p.share_pct for p in partners)
+    shares_valid = abs(total_shares - Decimal('100.00')) < Decimal('0.01')
+    
+    # حساب تكاليف المراحل
+    for stage in stages:
+        stage.total_cost = get_stage_total_cost(stage.id)
+        stage.allocated = get_already_allocated(stage.id)
+        stage.delta = stage.total_cost - stage.allocated
+    
+    all_projects = Project.query.all()
+    
+    return render_template('stages_page.html',
+                         current_project=project,
+                         all_projects=all_projects,
+                         stages=stages,
+                         shares_valid=shares_valid,
+                         active_page='stages')
+
+@app.route('/project/<int:project_id>/expenses')
+def project_expenses(project_id):
+    """صفحة المصروفات"""
+    project = Project.query.get_or_404(project_id)
+    expenses = Expense.query.filter_by(project_id=project_id).order_by(Expense.expense_date.desc()).all()
+    stages = Stage.query.filter_by(project_id=project_id).all()
+    all_projects = Project.query.all()
+    
+    return render_template('expenses_page.html',
+                         current_project=project,
+                         all_projects=all_projects,
+                         expenses=expenses,
+                         stages=stages,
+                         active_page='expenses')
+
+@app.route('/project/<int:project_id>/allocations')
+def project_allocations(project_id):
+    """صفحة التوزيعات"""
+    project = Project.query.get_or_404(project_id)
+    allocations = Allocation.query.filter_by(project_id=project_id).order_by(Allocation.alloc_date.desc()).all()
+    all_projects = Project.query.all()
+    
+    return render_template('allocations_page.html',
+                         current_project=project,
+                         all_projects=all_projects,
+                         allocations=allocations,
+                         active_page='allocations')
+
+@app.route('/project/<int:project_id>/reports')
+def project_reports(project_id):
+    """صفحة التقارير"""
+    project = Project.query.get_or_404(project_id)
+    all_projects = Project.query.all()
+    
+    return render_template('reports_page.html',
+                         current_project=project,
+                         all_projects=all_projects,
+                         active_page='reports')
+
+@app.route('/project/<int:project_id>/settings')
+def project_settings(project_id):
+    """صفحة الإعدادات"""
+    project = Project.query.get_or_404(project_id)
+    priority = WalletPriority.query.filter_by(project_id=project_id).first()
+    partners = ProjectPartner.query.filter_by(project_id=project_id).all()
+    all_projects = Project.query.all()
+    
+    return render_template('settings_page.html',
+                         current_project=project,
+                         all_projects=all_projects,
+                         priority=priority,
+                         partners=partners,
+                         active_page='settings')
 
 # Initialize database on startup
 with app.app_context():
