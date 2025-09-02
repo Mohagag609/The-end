@@ -217,116 +217,132 @@ def project_partners(project_id):
 @app.route('/project/<int:project_id>/add_partner', methods=['POST'])
 def add_partner(project_id):
     """إضافة شريك للمشروع"""
-    project = Project.query.get_or_404(project_id)
-    
-    partner_name = request.form.get('partner_name')
-    share_pct = Decimal(request.form.get('share_pct', '0'))
-    carry_forward = Decimal(request.form.get('carry_forward', '0'))
-    
-    # البحث عن الشريك أو إنشاؤه
-    partner = Partner.query.filter_by(name=partner_name).first()
-    if not partner:
-        partner = Partner(name=partner_name)
-        db.session.add(partner)
-        db.session.flush()
-    
-    # التحقق من عدم تكرار الشريك في المشروع
-    existing = ProjectPartner.query.filter_by(
-        project_id=project_id,
-        partner_id=partner.id
-    ).first()
-    
-    if existing:
-        flash('الشريك موجود بالفعل في المشروع', 'error')
+    try:
+        project = Project.query.get_or_404(project_id)
+        
+        partner_name = request.form.get('partner_name')
+        share_pct = Decimal(request.form.get('share_pct', '0'))
+        carry_forward_str = request.form.get('carry_forward', '0')
+        carry_forward = Decimal(carry_forward_str) if carry_forward_str else Decimal('0')
+        
+        # البحث عن الشريك أو إنشاؤه
+        partner = Partner.query.filter_by(name=partner_name).first()
+        if not partner:
+            partner = Partner(name=partner_name)
+            db.session.add(partner)
+            db.session.flush()
+        
+        # التحقق من عدم تكرار الشريك في المشروع
+        existing = ProjectPartner.query.filter_by(
+            project_id=project_id,
+            partner_id=partner.id
+        ).first()
+        
+        if existing:
+            flash('الشريك موجود بالفعل في المشروع', 'error')
+            return redirect(url_for('project_partners', project_id=project_id))
+        
+        # إضافة الشريك للمشروع
+        project_partner = ProjectPartner(
+            project_id=project_id,
+            partner_id=partner.id,
+            share_pct=share_pct,
+            wallet_balance=Decimal('0'),
+            carry_forward_balance=carry_forward
+        )
+        db.session.add(project_partner)
+        db.session.commit()
+        
+        # التحقق من مجموع الحصص
+        if not validate_shares(project_id):
+            flash('تحذير: مجموع الحصص لا يساوي 100%', 'warning')
+        else:
+            flash('تم إضافة الشريك بنجاح', 'success')
+        
         return redirect(url_for('project_partners', project_id=project_id))
-    
-    # إضافة الشريك للمشروع
-    project_partner = ProjectPartner(
-        project_id=project_id,
-        partner_id=partner.id,
-        share_pct=share_pct,
-        wallet_balance=Decimal('0'),
-        carry_forward_balance=carry_forward
-    )
-    db.session.add(project_partner)
-    db.session.commit()
-    
-    # التحقق من مجموع الحصص
-    if not validate_shares(project_id):
-        flash('تحذير: مجموع الحصص لا يساوي 100%', 'warning')
-    else:
-        flash('تم إضافة الشريك بنجاح', 'success')
-    
-    return redirect(url_for('project_partners', project_id=project_id))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في إضافة الشريك: {str(e)}', 'error')
+        return redirect(url_for('project_partners', project_id=project_id))
 
 @app.route('/project/<int:project_id>/wallet/<int:partner_id>/deposit', methods=['POST'])
 def wallet_deposit(project_id, partner_id):
     """إيداع في محفظة الشريك"""
-    amount = Decimal(request.form.get('amount', '0'))
-    notes = request.form.get('notes', '')
-    
-    pp = ProjectPartner.query.filter_by(
-        project_id=project_id,
-        partner_id=partner_id
-    ).first_or_404()
-    
-    # تحديث رصيد المحفظة
-    pp.wallet_balance += amount
-    
-    # إنشاء voucher
-    voucher = Voucher(
-        project_id=project_id,
-        v_type='receipt',
-        party_type='partner',
-        party_id=partner_id,
-        amount=amount,
-        v_date=date.today(),
-        ref_code=generate_ref_code('REC'),
-        notes=notes
-    )
-    db.session.add(voucher)
-    db.session.commit()
-    
-    flash(f'تم الإيداع بنجاح: {amount} جنيه', 'success')
-    return redirect(url_for('project_partners', project_id=project_id))
+    try:
+        amount = Decimal(request.form.get('amount', '0'))
+        notes = request.form.get('notes', '')
+        
+        pp = ProjectPartner.query.filter_by(
+            project_id=project_id,
+            partner_id=partner_id
+        ).first_or_404()
+        
+        # تحديث رصيد المحفظة
+        pp.wallet_balance += amount
+        
+        # إنشاء voucher
+        voucher = Voucher(
+            project_id=project_id,
+            v_type='receipt',
+            party_type='partner',
+            party_id=partner_id,
+            amount=amount,
+            v_date=date.today(),
+            ref_code=generate_ref_code('REC'),
+            notes=notes
+        )
+        db.session.add(voucher)
+        db.session.commit()
+        
+        flash(f'تم الإيداع بنجاح: {amount} جنيه', 'success')
+        return redirect(url_for('project_partners', project_id=project_id))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في الإيداع: {str(e)}', 'error')
+        return redirect(url_for('project_partners', project_id=project_id))
 
 @app.route('/project/<int:project_id>/wallet/<int:partner_id>/withdraw', methods=['POST'])
 def wallet_withdraw(project_id, partner_id):
     """سحب من محفظة الشريك"""
-    amount = Decimal(request.form.get('amount', '0'))
-    notes = request.form.get('notes', '')
-    
-    pp = ProjectPartner.query.filter_by(
-        project_id=project_id,
-        partner_id=partner_id
-    ).first_or_404()
-    
-    # التحقق من الرصيد
-    wallet_priority = WalletPriority.query.filter_by(project_id=project_id).first()
-    if not wallet_priority or not wallet_priority.allow_negative:
-        if pp.wallet_balance < amount:
-            flash('الرصيد غير كافي للسحب', 'error')
-            return redirect(url_for('project_home', project_id=project_id))
-    
-    # تحديث رصيد المحفظة
-    pp.wallet_balance -= amount
-    
-    # إنشاء voucher
-    voucher = Voucher(
-        project_id=project_id,
-        v_type='payment',
-        party_type='partner',
-        party_id=partner_id,
-        amount=amount,
-        v_date=date.today(),
-        ref_code=generate_ref_code('PAY'),
-        notes=notes
-    )
-    db.session.add(voucher)
-    db.session.commit()
-    
-    flash(f'تم السحب بنجاح: {amount} جنيه', 'success')
-    return redirect(url_for('project_partners', project_id=project_id))
+    try:
+        amount = Decimal(request.form.get('amount', '0'))
+        notes = request.form.get('notes', '')
+        
+        pp = ProjectPartner.query.filter_by(
+            project_id=project_id,
+            partner_id=partner_id
+        ).first_or_404()
+        
+        # التحقق من الرصيد
+        wallet_priority = WalletPriority.query.filter_by(project_id=project_id).first()
+        if not wallet_priority or not wallet_priority.allow_negative:
+            if pp.wallet_balance < amount:
+                flash('الرصيد غير كافي للسحب', 'error')
+                return redirect(url_for('project_partners', project_id=project_id))
+        
+        # تحديث رصيد المحفظة
+        pp.wallet_balance -= amount
+        
+        # إنشاء voucher
+        voucher = Voucher(
+            project_id=project_id,
+            v_type='payment',
+            party_type='partner',
+            party_id=partner_id,
+            amount=amount,
+            v_date=date.today(),
+            ref_code=generate_ref_code('PAY'),
+            notes=notes
+        )
+        db.session.add(voucher)
+        db.session.commit()
+        
+        flash(f'تم السحب بنجاح: {amount} جنيه', 'success')
+        return redirect(url_for('project_partners', project_id=project_id))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في السحب: {str(e)}', 'error')
+        return redirect(url_for('project_partners', project_id=project_id))
 
 @app.route('/project/<int:project_id>/stage/new', methods=['POST'])
 def new_stage(project_id):
@@ -443,56 +459,63 @@ def purchases(project_id):
     suppliers = Supplier.query.all()
     items = Item.query.all()
     warehouses = Warehouse.query.filter_by(project_id=project_id).all()
+    stages = Stage.query.filter_by(project_id=project_id).all()
     all_projects = Project.query.all()
     
-    return render_template('purchases_page.html', 
+    return render_template('purchases_page.html',
                          current_project=project,
                          all_projects=all_projects,
                          invoices=invoices,
                          suppliers=suppliers,
                          items=items,
                          warehouses=warehouses,
+                         stages=stages,
                          active_page='purchases')
 
 @app.route('/project/<int:project_id>/purchase/new', methods=['POST'])
 def new_purchase(project_id):
     """إنشاء فاتورة شراء"""
-    supplier_id = request.form.get('supplier_id')
-    warehouse_id = request.form.get('warehouse_id')
-    invoice_date = datetime.strptime(request.form.get('invoice_date'), '%Y-%m-%d').date()
+    try:
+        supplier_id = request.form.get('supplier_id')
+        warehouse_id = request.form.get('warehouse_id')
+        stage_id = request.form.get('stage_id') or None
+        invoice_no = request.form.get('invoice_no', '')
+        invoice_date = datetime.strptime(request.form.get('invoice_date'), '%Y-%m-%d').date()
+        
+        # إنشاء الفاتورة
+        invoice = PurchaseInvoice(
+            project_id=project_id,
+            supplier_id=supplier_id,
+            stage_id=stage_id,
+            invoice_no=invoice_no,
+            invoice_date=invoice_date,
+            total=Decimal('0'),
+            status='posted'
+        )
+        db.session.add(invoice)
+        db.session.flush()
+        
+        # إضافة الأصناف
+        total = Decimal('0')
+        item_ids = request.form.getlist('item_id[]')
+        quantities = request.form.getlist('qty[]')
+        prices = request.form.getlist('price[]')
     
-    # إنشاء الفاتورة
-    invoice = PurchaseInvoice(
-        project_id=project_id,
-        supplier_id=supplier_id,
-        invoice_date=invoice_date,
-        total=Decimal('0'),
-        status='posted'
-    )
-    db.session.add(invoice)
-    db.session.flush()
-    
-    # إضافة الأصناف
-    total = Decimal('0')
-    item_ids = request.form.getlist('item_id[]')
-    quantities = request.form.getlist('qty[]')
-    costs = request.form.getlist('cost[]')
-    
-    for i in range(len(item_ids)):
-        if item_ids[i]:
-            qty = Decimal(quantities[i])
-            cost = Decimal(costs[i])
-            line_total = qty * cost
-            
-            # إضافة سطر الفاتورة
-            invoice_item = PurchaseInvoiceItem(
-                invoice_id=invoice.id,
-                item_id=item_ids[i],
-                qty=qty,
-                unit_cost=cost,
-                tax=Decimal('0')
-            )
-            db.session.add(invoice_item)
+        for i in range(len(item_ids)):
+            if item_ids[i] and quantities[i] and prices[i]:
+                qty = Decimal(quantities[i])
+                price = Decimal(prices[i])
+                line_total = qty * price
+                
+                # إضافة سطر الفاتورة
+                invoice_item = PurchaseInvoiceItem(
+                    invoice_id=invoice.id,
+                    item_id=item_ids[i],
+                    qty=qty,
+                    unit_cost=price,
+                    tax=Decimal('0')
+                )
+                db.session.add(invoice_item)
             
             # إنشاء حركة مخزن (دخول)
             stock_move = StockMove(
