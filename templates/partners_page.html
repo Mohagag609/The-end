@@ -268,13 +268,13 @@
                 {% for voucher in recent_vouchers %}
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ voucher.date.strftime('%Y-%m-%d') }}
+                        {{ voucher.v_date.strftime('%Y-%m-%d') }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {{ voucher.partner.name }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        {% if voucher.type == 'deposit' %}
+                        {% if voucher.v_type == 'receipt' %}
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                             إيداع
                         </span>
@@ -284,11 +284,11 @@
                         </span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm {% if voucher.type == 'deposit' %}text-green-600{% else %}text-red-600{% endif %} font-medium">
-                        {% if voucher.type == 'deposit' %}+{% else %}-{% endif %}{{ "{:,.2f}".format(voucher.amount) }}
+                    <td class="px-6 py-4 whitespace-nowrap text-sm {% if voucher.v_type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %} font-medium">
+                        {% if voucher.v_type == 'receipt' %}+{% else %}-{% endif %}{{ "{:,.2f}".format(voucher.amount) }}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {{ "{:,.2f}".format(voucher.balance_after) }}
+                        -
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-500">
                         {{ voucher.notes or '-' }}

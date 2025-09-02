@@ -184,6 +184,20 @@ def project_partners(project_id):
         total_withdrawals += withdrawals
         total_balance += pp.wallet_balance
     
+    # الحصول على آخر الحركات للتبويب الثالث
+    recent_vouchers = Voucher.query.filter_by(
+        project_id=project_id
+    ).order_by(Voucher.v_date.desc()).limit(20).all()
+    
+    # حساب التوزيعات المستحقة
+    total_allocations = Decimal('0')
+    allocations = Allocation.query.filter_by(
+        project_id=project_id,
+        posted=True
+    ).all()
+    for allocation in allocations:
+        total_allocations += allocation.total_amount
+    
     # جميع المشاريع للتبديل
     all_projects = Project.query.all()
     
@@ -196,6 +210,8 @@ def project_partners(project_id):
                          total_deposits=total_deposits,
                          total_withdrawals=total_withdrawals,
                          total_balance=total_balance,
+                         total_allocations=total_allocations,
+                         recent_vouchers=recent_vouchers,
                          active_page='partners')
 
 @app.route('/project/<int:project_id>/add_partner', methods=['POST'])
@@ -205,6 +221,7 @@ def add_partner(project_id):
     
     partner_name = request.form.get('partner_name')
     share_pct = Decimal(request.form.get('share_pct', '0'))
+    carry_forward = Decimal(request.form.get('carry_forward', '0'))
     
     # البحث عن الشريك أو إنشاؤه
     partner = Partner.query.filter_by(name=partner_name).first()
@@ -221,7 +238,7 @@ def add_partner(project_id):
     
     if existing:
         flash('الشريك موجود بالفعل في المشروع', 'error')
-        return redirect(url_for('project_home', project_id=project_id))
+        return redirect(url_for('project_partners', project_id=project_id))
     
     # إضافة الشريك للمشروع
     project_partner = ProjectPartner(
@@ -229,7 +246,7 @@ def add_partner(project_id):
         partner_id=partner.id,
         share_pct=share_pct,
         wallet_balance=Decimal('0'),
-        carry_forward_balance=Decimal('0')
+        carry_forward_balance=carry_forward
     )
     db.session.add(project_partner)
     db.session.commit()

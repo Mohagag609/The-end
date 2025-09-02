@@ -31,6 +31,7 @@ class Partner(db.Model):
     __tablename__ = 'partners'
     
     id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(50), unique=True)
     name = db.Column(db.String(200), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
@@ -38,6 +39,16 @@ class Partner(db.Model):
     project_partners = db.relationship('ProjectPartner', back_populates='partner')
     vouchers = db.relationship('Voucher', back_populates='partner')
     expenses = db.relationship('Expense', back_populates='partner')
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if not self.code:
+            # Generate unique code
+            last_partner = Partner.query.order_by(Partner.id.desc()).first()
+            if last_partner and last_partner.id:
+                self.code = f"PTR{last_partner.id + 1:04d}"
+            else:
+                self.code = "PTR0001"
 
 class ProjectPartner(db.Model):
     __tablename__ = 'project_partners'
