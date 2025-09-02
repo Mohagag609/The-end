@@ -3,125 +3,301 @@
 {% block title %}الشركاء والمحافظ - {{ current_project.name }}{% endblock %}
 
 {% block content %}
-<div class="mb-6 flex justify-between items-center">
-    <div>
-        <h1 class="text-2xl font-bold text-gray-900">الشركاء والمحافظ</h1>
-        <p class="text-gray-600 mt-1">إدارة الشركاء ومحافظهم في المشروع</p>
+<!-- Tabs Navigation -->
+<div class="border-b border-gray-200 mb-6">
+    <nav class="-mb-px flex space-x-reverse space-x-8">
+        <button onclick="switchTab('partners')" id="partnersTab" 
+                class="tab-btn py-2 px-1 border-b-2 font-medium text-sm border-blue-500 text-blue-600">
+            الشركاء
+        </button>
+        <button onclick="switchTab('wallets')" id="walletsTab"
+                class="tab-btn py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            المحافظ
+        </button>
+        <button onclick="switchTab('transactions')" id="transactionsTab"
+                class="tab-btn py-2 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+            حركات المحافظ
+        </button>
+    </nav>
+</div>
+
+<!-- Partners Tab -->
+<div id="partnersContent" class="tab-content">
+    <div class="mb-6 flex justify-between items-center">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">الشركاء</h1>
+            <p class="text-gray-600 mt-1">إدارة الشركاء وحصصهم في المشروع</p>
+        </div>
+        <button onclick="document.getElementById('addPartnerModal').classList.remove('hidden')" 
+                class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
+            <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            إضافة شريك
+        </button>
     </div>
-    <button onclick="document.getElementById('addPartnerModal').classList.remove('hidden')" 
-            class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition flex items-center">
-        <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+
+    {% if not shares_valid %}
+    <div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center">
+        <svg class="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
         </svg>
-        إضافة شريك
-    </button>
-</div>
+        <span class="font-medium">تحذير: مجموع الحصص ({{ "{:.2f}".format(total_shares) }}%) لا يساوي 100%</span>
+    </div>
+    {% endif %}
 
-{% if not shares_valid %}
-<div class="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded-lg mb-6 flex items-center">
-    <svg class="w-5 h-5 ml-2" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-    </svg>
-    <span class="font-medium">تحذير: مجموع الحصص ({{ "{:.2f}".format(total_shares) }}%) لا يساوي 100%</span>
-</div>
-{% endif %}
-
-<!-- Summary Cards -->
-<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-    <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-sm text-gray-600">عدد الشركاء</p>
-        <p class="text-2xl font-bold text-gray-900">{{ partners|length }}</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-sm text-gray-600">إجمالي الإيداعات</p>
-        <p class="text-2xl font-bold text-green-600">{{ "{:,.0f}".format(total_deposits) }}</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-sm text-gray-600">إجمالي السحوبات</p>
-        <p class="text-2xl font-bold text-red-600">{{ "{:,.0f}".format(total_withdrawals) }}</p>
-    </div>
-    <div class="bg-white rounded-lg shadow p-4">
-        <p class="text-sm text-gray-600">إجمالي الأرصدة</p>
-        <p class="text-2xl font-bold {% if total_balance < 0 %}text-red-600{% else %}text-blue-600{% endif %}">
-            {{ "{:,.0f}".format(total_balance) }}
-        </p>
-    </div>
-</div>
-
-<!-- Partners Grid -->
-<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    {% for pp in partners %}
-    <div class="bg-white rounded-lg shadow hover:shadow-lg transition">
-        <div class="p-6">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h3 class="text-xl font-semibold text-gray-900">{{ pp.partner.name }}</h3>
-                    <div class="flex items-center mt-2 space-x-reverse space-x-2">
-                        <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+    <!-- Partners Table -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الشريك</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">نسبة الحصة</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">رصيد مرحل</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">إجراءات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for pp in partners %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-medium text-gray-900">{{ pp.partner.name }}</div>
+                        <div class="text-sm text-gray-500">كود: {{ pp.partner.code }}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
                             {{ "{:.2f}".format(pp.share_pct) }}%
                         </span>
-                        {% if pp.carry_forward_balance != 0 %}
-                        <span class="text-sm text-gray-600">
-                            رصيد مرحل: 
-                            <span class="font-medium {% if pp.carry_forward_balance < 0 %}text-red-600{% else %}text-blue-600{% endif %}">
-                                {{ "{:,.2f}".format(pp.carry_forward_balance) }}
-                            </span>
-                        </span>
-                        {% endif %}
-                    </div>
-                </div>
-                <div class="text-left">
-                    <p class="text-sm text-gray-500">رصيد المحفظة</p>
-                    <p class="text-2xl font-bold {% if pp.wallet_balance < 0 %}text-red-600{% else %}text-green-600{% endif %}">
-                        {{ "{:,.2f}".format(pp.wallet_balance) }}
-                    </p>
-                    <p class="text-xs text-gray-500">جنيه</p>
-                </div>
-            </div>
-            
-            <!-- Wallet Stats -->
-            <div class="grid grid-cols-3 gap-2 mb-4 text-center">
-                <div class="bg-gray-50 rounded p-2">
-                    <p class="text-xs text-gray-600">إيداعات</p>
-                    <p class="text-sm font-semibold text-green-600">{{ "{:,.0f}".format(pp.total_deposits or 0) }}</p>
-                </div>
-                <div class="bg-gray-50 rounded p-2">
-                    <p class="text-xs text-gray-600">سحوبات</p>
-                    <p class="text-sm font-semibold text-red-600">{{ "{:,.0f}".format(pp.total_withdrawals or 0) }}</p>
-                </div>
-                <div class="bg-gray-50 rounded p-2">
-                    <p class="text-xs text-gray-600">توزيعات</p>
-                    <p class="text-sm font-semibold text-orange-600">{{ "{:,.0f}".format(pp.total_allocations or 0) }}</p>
-                </div>
-            </div>
-            
-            <!-- Actions -->
-            <div class="flex space-x-reverse space-x-2">
-                <button onclick="openDepositModal({{ pp.partner.id }}, '{{ pp.partner.name }}')" 
-                        class="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 transition text-sm">
-                    <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm {% if pp.carry_forward_balance < 0 %}text-red-600{% else %}text-gray-900{% endif %}">
+                        {{ "{:,.2f}".format(pp.carry_forward_balance) }} جنيه
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="editPartner({{ pp.partner.id }})" class="text-blue-600 hover:text-blue-900 ml-3">تعديل</button>
+                        <button onclick="deletePartner({{ pp.partner.id }})" class="text-red-600 hover:text-red-900">حذف</button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Wallets Tab -->
+<div id="walletsContent" class="tab-content hidden">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">المحافظ</h1>
+        <p class="text-gray-600 mt-1">إدارة محافظ الشركاء وأرصدتهم</p>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-green-100 rounded-lg p-3">
+                    <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8l-8 8-8-8"></path>
                     </svg>
-                    إيداع
-                </button>
-                <button onclick="openWithdrawModal({{ pp.partner.id }}, '{{ pp.partner.name }}')" 
-                        class="flex-1 bg-red-500 text-white py-2 px-3 rounded-lg hover:bg-red-600 transition text-sm">
-                    <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm text-gray-600">إجمالي الإيداعات</p>
+                    <p class="text-xl font-bold text-gray-900">{{ "{:,.0f}".format(total_deposits) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-red-100 rounded-lg p-3">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V4m8 8l-8-8-8 8"></path>
                     </svg>
-                    سحب
-                </button>
-                <a href="/project/{{ current_project.id }}/report/partner/{{ pp.partner.id }}" 
-                   class="flex-1 bg-gray-200 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-300 transition text-sm text-center">
-                    <svg class="w-4 h-4 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm text-gray-600">إجمالي السحوبات</p>
+                    <p class="text-xl font-bold text-gray-900">{{ "{:,.0f}".format(total_withdrawals) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-orange-100 rounded-lg p-3">
+                    <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
                     </svg>
-                    كشف حساب
-                </a>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm text-gray-600">التوزيعات المستحقة</p>
+                    <p class="text-xl font-bold text-gray-900">{{ "{:,.0f}".format(total_allocations) }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-lg shadow p-4">
+            <div class="flex items-center">
+                <div class="flex-shrink-0 bg-blue-100 rounded-lg p-3">
+                    <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                    </svg>
+                </div>
+                <div class="mr-4">
+                    <p class="text-sm text-gray-600">صافي الأرصدة</p>
+                    <p class="text-xl font-bold {% if total_balance < 0 %}text-red-600{% else %}text-blue-600{% endif %}">
+                        {{ "{:,.0f}".format(total_balance) }}
+                    </p>
+                </div>
             </div>
         </div>
     </div>
-    {% endfor %}
+
+    <!-- Wallets Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for pp in partners %}
+        <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition">
+            <div class="bg-gradient-to-l from-blue-50 to-white p-4 border-b">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">{{ pp.partner.name }}</h3>
+                        <span class="inline-block mt-1 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                            حصة {{ "{:.2f}".format(pp.share_pct) }}%
+                        </span>
+                    </div>
+                    <div class="text-left">
+                        <p class="text-xs text-gray-500">الرصيد الحالي</p>
+                        <p class="text-2xl font-bold {% if pp.wallet_balance < 0 %}text-red-600{% else %}text-green-600{% endif %}">
+                            {{ "{:,.2f}".format(pp.wallet_balance) }}
+                        </p>
+                        <p class="text-xs text-gray-500">جنيه</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4">
+                <!-- Wallet Details -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-green-50 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-green-700">إيداعات</span>
+                            <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11l5-5m0 0l5 5m-5-5v12"></path>
+                            </svg>
+                        </div>
+                        <p class="text-lg font-bold text-green-800 mt-1">{{ "{:,.0f}".format(pp.total_deposits or 0) }}</p>
+                    </div>
+                    <div class="bg-red-50 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-red-700">سحوبات</span>
+                            <svg class="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 13l-5 5m0 0l-5-5m5 5V6"></path>
+                            </svg>
+                        </div>
+                        <p class="text-lg font-bold text-red-800 mt-1">{{ "{:,.0f}".format(pp.total_withdrawals or 0) }}</p>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-orange-50 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-orange-700">توزيعات</span>
+                            <svg class="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                            </svg>
+                        </div>
+                        <p class="text-lg font-bold text-orange-800 mt-1">{{ "{:,.0f}".format(pp.total_allocations or 0) }}</p>
+                    </div>
+                    <div class="bg-purple-50 rounded-lg p-3">
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-purple-700">رصيد مرحل</span>
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <p class="text-lg font-bold text-purple-800 mt-1">{{ "{:,.0f}".format(pp.carry_forward_balance or 0) }}</p>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div class="flex space-x-reverse space-x-2">
+                    <button onclick="openDepositModal({{ pp.partner.id }}, '{{ pp.partner.name }}')" 
+                            class="flex-1 bg-green-500 text-white py-2 px-3 rounded-lg hover:bg-green-600 transition flex items-center justify-center">
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8l-8 8-8-8"></path>
+                        </svg>
+                        إيداع
+                    </button>
+                    <button onclick="openWithdrawModal({{ pp.partner.id }}, '{{ pp.partner.name }}')" 
+                            class="flex-1 bg-red-500 text-white py-2 px-3 rounded-lg hover:bg-red-600 transition flex items-center justify-center">
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20V4m8 8l-8-8-8 8"></path>
+                        </svg>
+                        سحب
+                    </button>
+                    <a href="/project/{{ current_project.id }}/report/partner/{{ pp.partner.id }}" 
+                       class="flex-1 bg-gray-200 text-gray-700 py-2 px-3 rounded-lg hover:bg-gray-300 transition flex items-center justify-center">
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                        </svg>
+                        كشف
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Transactions Tab -->
+<div id="transactionsContent" class="tab-content hidden">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">حركات المحافظ</h1>
+        <p class="text-gray-600 mt-1">سجل جميع حركات الإيداع والسحب</p>
+    </div>
+
+    <!-- Recent Transactions -->
+    <div class="bg-white rounded-lg shadow overflow-hidden">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">التاريخ</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الشريك</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">النوع</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">المبلغ</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">الرصيد بعد</th>
+                    <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ملاحظات</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {% for voucher in recent_vouchers %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ voucher.date.strftime('%Y-%m-%d') }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {{ voucher.partner.name }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        {% if voucher.type == 'deposit' %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                            إيداع
+                        </span>
+                        {% else %}
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                            سحب
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm {% if voucher.type == 'deposit' %}text-green-600{% else %}text-red-600{% endif %} font-medium">
+                        {% if voucher.type == 'deposit' %}+{% else %}-{% endif %}{{ "{:,.2f}".format(voucher.amount) }}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {{ "{:,.2f}".format(voucher.balance_after) }}
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-500">
+                        {{ voucher.notes or '-' }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Add Partner Modal -->
@@ -142,6 +318,13 @@
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                        placeholder="0.00">
                 <p class="mt-1 text-xs text-gray-500">النسبة المتبقية: {{ "{:.2f}".format(100 - total_shares) }}%</p>
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">رصيد مرحل (اختياري)</label>
+                <input type="number" name="carry_forward" step="0.01"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="0.00">
+                <p class="mt-1 text-xs text-gray-500">رصيد سابق من مشاريع أخرى</p>
             </div>
             <div class="flex justify-end space-x-reverse space-x-3">
                 <button type="button" onclick="document.getElementById('addPartnerModal').classList.add('hidden')"
@@ -225,6 +408,26 @@
 </div>
 
 <script>
+function switchTab(tab) {
+    // Hide all content
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+    });
+    
+    // Reset all tabs
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected content
+    document.getElementById(tab + 'Content').classList.remove('hidden');
+    
+    // Highlight selected tab
+    document.getElementById(tab + 'Tab').classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById(tab + 'Tab').classList.add('border-blue-500', 'text-blue-600');
+}
+
 function openDepositModal(partnerId, partnerName) {
     document.getElementById('depositPartnerName').textContent = partnerName;
     document.getElementById('depositForm').action = `/project/{{ current_project.id }}/wallet/${partnerId}/deposit`;
@@ -235,6 +438,18 @@ function openWithdrawModal(partnerId, partnerName) {
     document.getElementById('withdrawPartnerName').textContent = partnerName;
     document.getElementById('withdrawForm').action = `/project/{{ current_project.id }}/wallet/${partnerId}/withdraw`;
     document.getElementById('withdrawModal').classList.remove('hidden');
+}
+
+function editPartner(partnerId) {
+    // TODO: Implement edit partner
+    alert('سيتم إضافة هذه الميزة قريباً');
+}
+
+function deletePartner(partnerId) {
+    if (confirm('هل أنت متأكد من حذف هذا الشريك؟')) {
+        // TODO: Implement delete partner
+        alert('سيتم إضافة هذه الميزة قريباً');
+    }
 }
 </script>
 {% endblock %}
