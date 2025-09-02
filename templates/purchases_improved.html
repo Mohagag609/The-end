@@ -1,0 +1,574 @@
+{% extends "base.html" %}
+
+{% block title %}المشتريات والمخزون - {{ project.name }}{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="mb-6 bg-white rounded-lg shadow-sm p-4">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900">المشتريات والمخزون</h1>
+            <p class="text-gray-500 mt-1">{{ project.name }}</p>
+        </div>
+        <a href="/project/{{ project.id }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+            <svg class="w-5 h-5 inline-block ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            رجوع للمشروع
+        </a>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<div class="bg-white rounded-lg shadow-sm mb-6">
+    <div class="border-b border-gray-200">
+        <nav class="flex -mb-px" x-data="{ activeTab: 'purchase' }">
+            <button @click="activeTab = 'purchase'" 
+                    :class="activeTab === 'purchase' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-2 px-6 border-b-2 font-medium text-sm transition">
+                فاتورة شراء
+            </button>
+            <button @click="activeTab = 'issue'" 
+                    :class="activeTab === 'issue' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-2 px-6 border-b-2 font-medium text-sm transition">
+                صرف مخزون
+            </button>
+            <button @click="activeTab = 'items'" 
+                    :class="activeTab === 'items' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-2 px-6 border-b-2 font-medium text-sm transition">
+                الأصناف
+            </button>
+            <button @click="activeTab = 'history'" 
+                    :class="activeTab === 'history' ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'"
+                    class="py-2 px-6 border-b-2 font-medium text-sm transition">
+                السجل
+            </button>
+        </nav>
+    </div>
+    
+    <div class="p-6">
+        <!-- Purchase Invoice Tab -->
+        <div x-show="activeTab === 'purchase'" x-transition>
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">فاتورة شراء جديدة</h2>
+            <form action="/project/{{ project.id }}/purchase/new" method="POST" onsubmit="return validatePurchaseForm()" id="purchaseForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">المورد *</label>
+                        <select name="supplier_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">اختر المورد</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="button" onclick="showNewSupplierModal()" class="text-blue-600 text-sm mt-1 hover:text-blue-800">
+                            + إضافة مورد جديد
+                        </button>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">المخزن *</label>
+                        <select name="warehouse_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">تاريخ الفاتورة *</label>
+                        <input type="date" name="invoice_date" required 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               value="{{ date.today() }}">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">رقم الفاتورة</label>
+                        <input type="text" name="invoice_number" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                               placeholder="اختياري">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-medium text-gray-700">الأصناف *</label>
+                        <button type="button" onclick="addPurchaseItemRow()" class="text-blue-600 hover:text-blue-800 text-sm">
+                            + إضافة صنف
+                        </button>
+                    </div>
+                    
+                    <div class="bg-gray-50 rounded-lg p-3">
+                        <div class="grid grid-cols-12 gap-2 mb-2 text-xs font-medium text-gray-600">
+                            <div class="col-span-4">الصنف</div>
+                            <div class="col-span-2">الكمية</div>
+                            <div class="col-span-2">السعر</div>
+                            <div class="col-span-2">الإجمالي</div>
+                            <div class="col-span-2"></div>
+                        </div>
+                        
+                        <div id="purchaseItemsContainer">
+                            <div class="purchase-item-row grid grid-cols-12 gap-2 mb-2">
+                                <select name="item_id[]" class="col-span-4 px-2 py-1 border border-gray-300 rounded text-sm" onchange="updateItemCost(this)">
+                                    <option value="">اختر الصنف</option>
+                                    {% for item in items %}
+                                    <option value="{{ item.id }}" data-cost="{{ item.std_cost }}">{{ item.name }} ({{ item.sku }})</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="number" name="qty[]" step="0.001" min="0" placeholder="0" 
+                                       class="col-span-2 px-2 py-1 border border-gray-300 rounded text-sm"
+                                       onchange="calculateLineTotal(this)">
+                                <input type="number" name="cost[]" step="0.01" min="0" placeholder="0.00" 
+                                       class="col-span-2 px-2 py-1 border border-gray-300 rounded text-sm"
+                                       onchange="calculateLineTotal(this)">
+                                <input type="text" readonly class="col-span-2 px-2 py-1 bg-gray-100 border border-gray-300 rounded text-sm line-total" value="0.00">
+                                <button type="button" onclick="removePurchaseItemRow(this)" class="col-span-2 text-red-600 hover:text-red-800 text-sm">
+                                    حذف
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="border-t pt-3 mt-3">
+                            <div class="flex justify-between items-center">
+                                <span class="font-semibold text-gray-700">الإجمالي الكلي:</span>
+                                <span id="purchaseTotal" class="text-xl font-bold text-blue-600">0.00 جنيه</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-reverse space-x-3">
+                    <button type="button" onclick="resetPurchaseForm()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                        مسح النموذج
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                        حفظ الفاتورة
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Stock Issue Tab -->
+        <div x-show="activeTab === 'issue'" x-transition style="display: none;">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">صرف مخزون لمرحلة</h2>
+            <form action="/project/{{ project.id }}/stock/issue" method="POST" onsubmit="return validateIssueForm()" id="issueForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">المخزن *</label>
+                        <select name="warehouse_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">المرحلة *</label>
+                        <select name="stage_id" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">اختر المرحلة</option>
+                            {% for stage in project.stages %}
+                            <option value="{{ stage.id }}">{{ stage.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الصنف *</label>
+                        <select name="item_id" required onchange="showItemCost(this)" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">اختر الصنف</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}" data-cost="{{ item.std_cost }}" data-uom="{{ item.uom }}">
+                                {{ item.name }} ({{ item.sku }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div id="itemCostDisplay" class="mt-1 text-sm text-gray-600"></div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">الكمية *</label>
+                        <div class="flex">
+                            <input type="number" name="qty" step="0.001" min="0" required 
+                                   data-validate="positive" data-label="الكمية"
+                                   class="flex-1 px-3 py-2 border border-gray-300 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                   onchange="calculateIssueCost()">
+                            <span id="uomDisplay" class="px-3 py-2 bg-gray-100 border border-gray-300 border-r-0 rounded-l-lg text-sm">وحدة</span>
+                        </div>
+                        <div id="issueCostDisplay" class="mt-1 text-sm font-medium text-blue-600"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p class="text-sm text-yellow-800">
+                        <svg class="w-4 h-4 inline-block ml-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                        </svg>
+                        سيتم خصم المخزون وإضافة مصروف بنفس القيمة للمرحلة المختارة
+                    </p>
+                </div>
+                
+                <div class="flex justify-end space-x-reverse space-x-3 mt-6">
+                    <button type="button" onclick="resetIssueForm()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                        مسح النموذج
+                    </button>
+                    <button type="submit" class="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+                        صرف المخزون
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Items Tab -->
+        <div x-show="activeTab === 'items'" x-transition style="display: none;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-900">الأصناف</h2>
+                <button onclick="document.getElementById('newItemModal').classList.remove('hidden')" 
+                        class="bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition text-sm flex items-center">
+                    <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    إضافة صنف
+                </button>
+            </div>
+            
+            <div class="bg-white border rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الكود</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الاسم</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الوحدة</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">التكلفة القياسية</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for item in items %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">{{ item.sku }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ item.name }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ item.uom }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ "{:,.2f}".format(item.std_cost) }} جنيه</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% if not items %}
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">لا توجد أصناف</h3>
+                    <p class="mt-1 text-sm text-gray-500">ابدأ بإضافة صنف جديد</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- History Tab -->
+        <div x-show="activeTab === 'history'" x-transition style="display: none;">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">سجل الفواتير</h2>
+            <div class="bg-white border rounded-lg overflow-hidden">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">المورد</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">عدد الأصناف</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجمالي</th>
+                            <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for invoice in invoices %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ invoice.invoice_date }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">{{ invoice.supplier.name }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm">{{ invoice.items|length }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-sm font-medium">{{ "{:,.2f}".format(invoice.total) }} جنيه</td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    مرحلة
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                
+                {% if not invoices %}
+                <div class="text-center py-8">
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    <h3 class="mt-2 text-sm font-medium text-gray-900">لا توجد فواتير</h3>
+                    <p class="mt-1 text-sm text-gray-500">لم يتم تسجيل أي فواتير شراء بعد</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Item Modal -->
+<div id="newItemModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">صنف جديد</h3>
+        <form id="newItemForm" onsubmit="return submitNewItem(event)">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">كود الصنف (SKU) *</label>
+                <input type="text" name="sku" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="مثال: ITEM001">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">اسم الصنف *</label>
+                <input type="text" name="name" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="مثال: أسمنت بورتلاند">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">وحدة القياس *</label>
+                <input type="text" name="uom" value="وحدة" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="مثال: كيس، متر، كيلو">
+            </div>
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">التكلفة القياسية</label>
+                <input type="number" name="std_cost" step="0.01" min="0" value="0" 
+                       data-validate="positive"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="0.00">
+            </div>
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('newItemModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    إضافة الصنف
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- New Supplier Modal -->
+<div id="newSupplierModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-lg bg-white">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">مورد جديد</h3>
+        <form id="newSupplierForm" onsubmit="return submitNewSupplier(event)">
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-2">اسم المورد *</label>
+                <input type="text" name="name" required 
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       placeholder="مثال: شركة الأسمنت المصرية">
+            </div>
+            <div class="flex justify-end space-x-reverse space-x-3">
+                <button type="button" onclick="document.getElementById('newSupplierModal').classList.add('hidden')"
+                        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                    إضافة المورد
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+// Purchase Form Functions
+function addPurchaseItemRow() {
+    const container = document.getElementById('purchaseItemsContainer');
+    const newRow = document.createElement('div');
+    newRow.className = 'purchase-item-row grid grid-cols-12 gap-2 mb-2';
+    newRow.innerHTML = `
+        <select name="item_id[]" class="col-span-4 px-2 py-1 border border-gray-300 rounded text-sm" onchange="updateItemCost(this)">
+            <option value="">اختر الصنف</option>
+            {% for item in items %}
+            <option value="{{ item.id }}" data-cost="{{ item.std_cost }}">{{ item.name }} ({{ item.sku }})</option>
+            {% endfor %}
+        </select>
+        <input type="number" name="qty[]" step="0.001" min="0" placeholder="0" 
+               class="col-span-2 px-2 py-1 border border-gray-300 rounded text-sm"
+               onchange="calculateLineTotal(this)">
+        <input type="number" name="cost[]" step="0.01" min="0" placeholder="0.00" 
+               class="col-span-2 px-2 py-1 border border-gray-300 rounded text-sm"
+               onchange="calculateLineTotal(this)">
+        <input type="text" readonly class="col-span-2 px-2 py-1 bg-gray-100 border border-gray-300 rounded text-sm line-total" value="0.00">
+        <button type="button" onclick="removePurchaseItemRow(this)" class="col-span-2 text-red-600 hover:text-red-800 text-sm">
+            حذف
+        </button>
+    `;
+    container.appendChild(newRow);
+}
+
+function removePurchaseItemRow(button) {
+    const rows = document.querySelectorAll('.purchase-item-row');
+    if (rows.length > 1) {
+        button.closest('.purchase-item-row').remove();
+        calculatePurchaseTotal();
+    }
+}
+
+function updateItemCost(select) {
+    const row = select.closest('.purchase-item-row');
+    const costInput = row.querySelector('input[name="cost[]"]');
+    const selectedOption = select.options[select.selectedIndex];
+    if (selectedOption && selectedOption.dataset.cost) {
+        costInput.value = selectedOption.dataset.cost;
+        calculateLineTotal(costInput);
+    }
+}
+
+function calculateLineTotal(input) {
+    const row = input.closest('.purchase-item-row');
+    const qty = parseFloat(row.querySelector('input[name="qty[]"]').value) || 0;
+    const cost = parseFloat(row.querySelector('input[name="cost[]"]').value) || 0;
+    const total = qty * cost;
+    row.querySelector('.line-total').value = total.toFixed(2);
+    calculatePurchaseTotal();
+}
+
+function calculatePurchaseTotal() {
+    let total = 0;
+    document.querySelectorAll('.line-total').forEach(input => {
+        total += parseFloat(input.value) || 0;
+    });
+    document.getElementById('purchaseTotal').textContent = total.toFixed(2) + ' جنيه';
+}
+
+function validatePurchaseForm() {
+    const form = document.getElementById('purchaseForm');
+    const items = form.querySelectorAll('select[name="item_id[]"]');
+    let hasValidItem = false;
+    
+    items.forEach(item => {
+        if (item.value) {
+            hasValidItem = true;
+        }
+    });
+    
+    if (!hasValidItem) {
+        alert('يجب إضافة صنف واحد على الأقل');
+        return false;
+    }
+    
+    return validateForm('purchaseForm');
+}
+
+function resetPurchaseForm() {
+    if (confirm('هل أنت متأكد من مسح جميع البيانات؟')) {
+        document.getElementById('purchaseForm').reset();
+        const container = document.getElementById('purchaseItemsContainer');
+        container.innerHTML = '';
+        addPurchaseItemRow();
+        calculatePurchaseTotal();
+    }
+}
+
+// Stock Issue Functions
+function showItemCost(select) {
+    const selectedOption = select.options[select.selectedIndex];
+    const display = document.getElementById('itemCostDisplay');
+    const uomDisplay = document.getElementById('uomDisplay');
+    
+    if (selectedOption && selectedOption.dataset.cost) {
+        display.textContent = `التكلفة: ${parseFloat(selectedOption.dataset.cost).toFixed(2)} جنيه`;
+        uomDisplay.textContent = selectedOption.dataset.uom || 'وحدة';
+        calculateIssueCost();
+    } else {
+        display.textContent = '';
+        uomDisplay.textContent = 'وحدة';
+    }
+}
+
+function calculateIssueCost() {
+    const itemSelect = document.querySelector('select[name="item_id"]');
+    const qtyInput = document.querySelector('input[name="qty"]');
+    const display = document.getElementById('issueCostDisplay');
+    
+    if (itemSelect.value && qtyInput.value) {
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        const cost = parseFloat(selectedOption.dataset.cost) || 0;
+        const qty = parseFloat(qtyInput.value) || 0;
+        const total = cost * qty;
+        display.textContent = `القيمة الإجمالية: ${total.toFixed(2)} جنيه`;
+    } else {
+        display.textContent = '';
+    }
+}
+
+function validateIssueForm() {
+    return validateForm('issueForm');
+}
+
+function resetIssueForm() {
+    if (confirm('هل أنت متأكد من مسح جميع البيانات؟')) {
+        document.getElementById('issueForm').reset();
+        document.getElementById('itemCostDisplay').textContent = '';
+        document.getElementById('issueCostDisplay').textContent = '';
+        document.getElementById('uomDisplay').textContent = 'وحدة';
+    }
+}
+
+// New Item/Supplier Functions
+async function submitNewItem(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    try {
+        const response = await fetch('/item/new', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const item = await response.json();
+            document.getElementById('newItemModal').classList.add('hidden');
+            location.reload();
+        } else {
+            const error = await response.json();
+            alert(error.error || 'حدث خطأ');
+        }
+    } catch (error) {
+        alert('حدث خطأ في الاتصال');
+    }
+    return false;
+}
+
+async function submitNewSupplier(event) {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    
+    try {
+        const response = await fetch('/supplier/new', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (response.ok) {
+            document.getElementById('newSupplierModal').classList.add('hidden');
+            location.reload();
+        } else {
+            alert('حدث خطأ');
+        }
+    } catch (error) {
+        alert('حدث خطأ في الاتصال');
+    }
+    return false;
+}
+
+function showNewSupplierModal() {
+    document.getElementById('newSupplierModal').classList.remove('hidden');
+}
+
+// Initialize on load
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('purchaseItemsContainer') && 
+        document.getElementById('purchaseItemsContainer').children.length === 0) {
+        addPurchaseItemRow();
+    }
+});
+</script>
+{% endblock %}

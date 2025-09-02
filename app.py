@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from config import Config
 from models import db, Project, Partner, ProjectPartner, Supplier, Item, Warehouse, Stage, PurchaseInvoice, PurchaseInvoiceItem, StockMove, Expense, Voucher, Allocation, PartnerSettleBatch, PartnerSettleLine, PartnerClaim, WalletPriority
@@ -7,7 +7,7 @@ from decimal import Decimal
 import json
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config.from_object(Config)
 db.init_app(app)
 
@@ -117,7 +117,7 @@ def project_home(project_id):
         stage.allocated = get_already_allocated(stage.id)
         stage.delta = stage.total_cost - stage.allocated
     
-    return render_template('project_home.html', 
+    return render_template('project_home_improved.html', 
                          project=project, 
                          partners=partners,
                          stages=stages,
@@ -353,12 +353,14 @@ def purchases(project_id):
     items = Item.query.all()
     warehouses = Warehouse.query.filter_by(project_id=project_id).all()
     
-    return render_template('purchases.html', 
+    from datetime import date as date_type
+    return render_template('purchases_improved.html', 
                          project=project,
                          invoices=invoices,
                          suppliers=suppliers,
                          items=items,
-                         warehouses=warehouses)
+                         warehouses=warehouses,
+                         date=date_type)
 
 @app.route('/project/<int:project_id>/purchase/new', methods=['POST'])
 def new_purchase(project_id):
