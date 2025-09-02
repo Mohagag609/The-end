@@ -5,6 +5,7 @@ from models import db, Project, Partner, ProjectPartner, Supplier, Item, Warehou
 from datetime import datetime, date
 from decimal import Decimal
 import json
+import os
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -818,7 +819,21 @@ def api_items():
         'std_cost': float(i.std_cost)
     } for i in items])
 
+# Initialize database on startup
+with app.app_context():
+    try:
+        db.create_all()
+        app.logger.info("Database tables initialized")
+    except Exception as e:
+        app.logger.warning(f"Database initialization warning: {e}")
+
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-    app.run(debug=False, host='0.0.0.0', port=5000)
+        try:
+            db.create_all()
+            app.logger.info("Database initialized")
+        except Exception as e:
+            app.logger.warning(f"Could not initialize database: {e}")
+    
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=False, host='0.0.0.0', port=port)
