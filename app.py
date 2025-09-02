@@ -1009,7 +1009,7 @@ def project_suppliers(project_id):
         ).count()
         
         supplier.total_purchases = db.session.query(
-            db.func.sum(PurchaseInvoice.total_amount)
+            db.func.sum(PurchaseInvoice.total)
         ).filter_by(
             project_id=project_id,
             supplier_id=supplier.id
@@ -1033,7 +1033,7 @@ def project_suppliers(project_id):
     # Calculate totals
     total_invoices = PurchaseInvoice.query.filter_by(project_id=project_id).count()
     total_purchases = db.session.query(
-        db.func.sum(PurchaseInvoice.total_amount)
+        db.func.sum(PurchaseInvoice.total)
     ).filter_by(project_id=project_id).scalar() or 0
     
     active_suppliers = len([s for s in suppliers if s.invoices_count > 0])

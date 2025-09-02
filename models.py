@@ -155,6 +155,8 @@ class PurchaseInvoice(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     project_id = db.Column(db.Integer, db.ForeignKey('projects.id'), nullable=False)
     supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id'), nullable=False)
+    stage_id = db.Column(db.Integer, db.ForeignKey('stages.id'), nullable=True)
+    invoice_no = db.Column(db.String(100))
     invoice_date = db.Column(db.Date, nullable=False)
     total = db.Column(db.Numeric(14, 2), default=0)
     status = db.Column(db.String(20), default='posted')
@@ -163,6 +165,7 @@ class PurchaseInvoice(db.Model):
     # Relationships
     project = db.relationship('Project', back_populates='purchase_invoices')
     supplier = db.relationship('Supplier', back_populates='purchase_invoices')
+    stage = db.relationship('Stage', backref='purchase_invoices')
     items = db.relationship('PurchaseInvoiceItem', back_populates='invoice', cascade='all, delete-orphan')
 
 class PurchaseInvoiceItem(db.Model):

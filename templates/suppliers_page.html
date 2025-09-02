@@ -223,18 +223,24 @@
                             {{ invoice.invoice_date.strftime('%Y-%m-%d') }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {{ invoice.invoice_no }}
+                            {{ invoice.invoice_no or "INV-%04d"|format(invoice.id) }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             {{ invoice.supplier.name }}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                            {{ "{:,.2f}".format(invoice.total_amount) }} جنيه
+                            {{ "{:,.2f}".format(invoice.total) }} جنيه
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
+                            {% if invoice.stage %}
                             <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
                                 {{ invoice.stage.name }}
                             </span>
+                            {% else %}
+                            <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">
+                                غير محدد
+                            </span>
+                            {% endif %}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
