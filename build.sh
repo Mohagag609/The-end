@@ -1,22 +1,23 @@
 #!/usr/bin/env bash
-# exit on error
+# Exit on error
 set -o errexit
 
+# Install Python dependencies
 pip install --upgrade pip
 pip install -r requirements.txt
 
+# Collect static files
 python manage.py collectstatic --no-input
-python manage.py migrate
 
-# Create default currency if not exists
-python manage.py shell << END
-from core.models import Currency
-if not Currency.objects.filter(is_default=True).exists():
-    Currency.objects.create(
-        code='EGP',
-        name='جنيه مصري',
-        symbol='ج.م',
-        is_default=True
-    )
-    print('Default currency created')
-END
+# Apply database migrations
+python manage.py migrate --no-input
+
+# Create sample data if database is empty
+python manage.py shell << EOF
+from projects.models import Project
+if not Project.objects.exists():
+    print("Creating initial data...")
+    exec(open('setup_complete_data.py').read())
+EOF
+
+echo "Build completed successfully!"
