@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}الشركاء - {{ project.name }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-users ml-2 text-blue-600"></i>
+                شركاء المشروع
+            </h1>
+            <a href="/project/{{ project.id }}/partners/add/" 
+               class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة شريك جديد
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي الإيداعات</p>
+                    <p class="text-2xl font-bold text-green-600">{{ total_deposits|default:0 }}</p>
+                </div>
+                <i class="fas fa-arrow-down text-green-600 text-2xl"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي المسحوبات</p>
+                    <p class="text-2xl font-bold text-red-600">{{ total_withdrawals|default:0 }}</p>
+                </div>
+                <i class="fas fa-arrow-up text-red-600 text-2xl"></i>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">صافي الرصيد</p>
+                    <p class="text-2xl font-bold text-blue-600">{{ total_balance|default:0 }}</p>
+                </div>
+                <i class="fas fa-wallet text-blue-600 text-2xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Partners Table -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">قائمة الشركاء</h2>
+        </div>
+        
+        {% if partners %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الشريك</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحصة %</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإيداعات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المسحوبات</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">إجراءات</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for pp in partners %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center ml-3">
+                                    <span class="text-xs font-medium">{{ pp.partner.name|slice:":1" }}</span>
+                                </div>
+                                <span class="font-medium">{{ pp.partner.name }}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">{{ pp.share_pct }}%</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600">{{ pp.deposits|default:0 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-red-600">{{ pp.withdrawals|default:0 }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold {% if pp.balance >= 0 %}text-blue-600{% else %}text-red-600{% endif %}">
+                            {{ pp.balance|default:0 }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm">
+                            <a href="/project/{{ project.id }}/partners/wallets/" class="text-blue-600 hover:text-blue-900">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-users text-gray-400 text-5xl mb-4"></i>
+            <p class="text-gray-500">لا يوجد شركاء في هذا المشروع</p>
+            <a href="/project/{{ project.id }}/partners/add/" 
+               class="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة أول شريك
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    <!-- Actions -->
+    <div class="mt-6 flex justify-between">
+        <a href="/project/{{ project.id }}/" 
+           class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700">
+            <i class="fas fa-arrow-right ml-2"></i>
+            العودة للوحة التحكم
+        </a>
+        <div class="space-x-reverse space-x-2">
+            <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
+               class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                <i class="fas fa-arrow-down ml-2"></i>
+                سند قبض
+            </a>
+            <a href="/project/{{ project.id }}/partners/voucher/payment/" 
+               class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700">
+                <i class="fas fa-arrow-up ml-2"></i>
+                سند صرف
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

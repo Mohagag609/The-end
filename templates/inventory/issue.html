@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}صرف مواد - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/inventory/movements/" class="text-gray-500 hover:text-gray-700">المخزون</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">صرف مواد</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200 bg-red-50">
+                <h1 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-arrow-up ml-2 text-red-600"></i>
+                    صرف مواد من المخزن
+                </h1>
+                <p class="text-sm text-gray-600 mt-1">صرف المواد للمراحل سيولد مصروف تلقائياً</p>
+            </div>
+            
+            <form method="POST" class="px-6 py-4" id="issue-form">
+                {% csrf_token %}
+                
+                <div class="space-y-4">
+                    <!-- Warehouse -->
+                    <div>
+                        <label for="warehouse_id" class="block text-sm font-medium text-gray-700">
+                            المخزن <span class="text-red-500">*</span>
+                        </label>
+                        <select name="warehouse_id" id="warehouse_id" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                onchange="updateAvailableItems()">
+                            <option value="">اختر المخزن</option>
+                            {% for warehouse in warehouses %}
+                            <option value="{{ warehouse.id }}">{{ warehouse.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Item -->
+                    <div>
+                        <label for="item_id" class="block text-sm font-medium text-gray-700">
+                            الصنف <span class="text-red-500">*</span>
+                        </label>
+                        <select name="item_id" id="item_id" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                onchange="updateItemInfo()">
+                            <option value="">اختر الصنف</option>
+                            {% for item in items %}
+                            <option value="{{ item.id }}" 
+                                    data-unit="{{ item.get_uom_display }}"
+                                    data-cost="{{ item.std_cost }}">
+                                {{ item.name }} ({{ item.sku }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                        <div id="item-info" class="mt-2"></div>
+                    </div>
+                    
+                    <!-- Quantity -->
+                    <div>
+                        <label for="qty" class="block text-sm font-medium text-gray-700">
+                            الكمية <span class="text-red-500">*</span>
+                        </label>
+                        <div class="mt-1 flex rounded-md shadow-sm">
+                            <input type="number" name="qty" id="qty" required
+                                   min="0.001" step="0.001"
+                                   class="flex-1 rounded-none rounded-r-md border-gray-300 focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                   placeholder="0.000"
+                                   onchange="calculateCost()">
+                            <span id="unit-display" class="inline-flex items-center px-3 rounded-l-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                الوحدة
+                            </span>
+                        </div>
+                        <div id="availability-info" class="mt-1"></div>
+                    </div>
+                    
+                    <!-- Stage -->
+                    <div>
+                        <label for="stage_id" class="block text-sm font-medium text-gray-700">
+                            المرحلة (اختياري)
+                        </label>
+                        <select name="stage_id" id="stage_id"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                            <option value="">بدون مرحلة</option>
+                            {% for stage in stages %}
+                            <option value="{{ stage.id }}">{{ stage.name }}</option>
+                            {% endfor %}
+                        </select>
+                        <p class="mt-1 text-xs text-gray-500">
+                            اختيار مرحلة سيضيف التكلفة كمصروف للمرحلة
+                        </p>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700">
+                            ملاحظات
+                        </label>
+                        <textarea name="notes" id="notes" rows="3"
+                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                  placeholder="سبب الصرف أو ملاحظات إضافية..."></textarea>
+                    </div>
+                </div>
+                
+                <!-- Cost Preview -->
+                <div class="mt-6 p-4 bg-yellow-50 rounded-lg">
+                    <h3 class="text-sm font-medium text-gray-700 mb-2">تفاصيل التكلفة</h3>
+                    <div class="text-sm text-gray-600">
+                        <div class="flex justify-between mb-1">
+                            <span>سعر الوحدة:</span>
+                            <span id="unit-cost">0.00 ج.م</span>
+                        </div>
+                        <div class="flex justify-between mb-1">
+                            <span>الكمية:</span>
+                            <span id="qty-display">0.000</span>
+                        </div>
+                        <div class="flex justify-between pt-2 border-t font-medium">
+                            <span>التكلفة الإجمالية:</span>
+                            <span id="total-cost" class="text-red-600">0.00 ج.م</span>
+                        </div>
+                    </div>
+                    <div id="stage-expense-info" class="mt-3 p-2 bg-blue-50 rounded hidden">
+                        <p class="text-xs text-blue-800">
+                            <i class="fas fa-info-circle ml-1"></i>
+                            سيتم إضافة هذا المبلغ كمصروف للمرحلة المختارة
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-reverse space-x-3">
+                    <a href="/project/{{ project.id }}/inventory/movements/" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        إلغاء
+                    </a>
+                    <button type="submit" id="submit-btn"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                        <i class="fas fa-arrow-up ml-2"></i>
+                        صرف المواد
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Store items data
+const itemsData = {};
+{% for item in items %}
+itemsData['{{ item.id }}'] = {
+    name: '{{ item.name }}',
+    unit: '{{ item.get_uom_display }}',
+    cost: {{ item.std_cost }},
+    // We'll update available quantity via AJAX
+    available: {}
+};
+{% endfor %}
+
+function updateAvailableItems() {
+    const warehouseId = document.getElementById('warehouse_id').value;
+    const itemSelect = document.getElementById('item_id');
+    
+    if (!warehouseId) {
+        itemSelect.disabled = true;
+        return;
+    }
+    
+    itemSelect.disabled = false;
+    
+    // In production, make AJAX call to get available quantities
+    // For now, we'll simulate with dummy data
+    updateItemInfo();
+}
+
+function updateItemInfo() {
+    const itemId = document.getElementById('item_id').value;
+    const warehouseId = document.getElementById('warehouse_id').value;
+    const infoDiv = document.getElementById('item-info');
+    const unitDisplay = document.getElementById('unit-display');
+    
+    if (!itemId) {
+        infoDiv.innerHTML = '';
+        unitDisplay.textContent = 'الوحدة';
+        return;
+    }
+    
+    const item = itemsData[itemId];
+    unitDisplay.textContent = item.unit;
+    
+    // Update unit cost
+    document.getElementById('unit-cost').textContent = item.cost.toFixed(2) + ' ج.م';
+    
+    // Show item info
+    infoDiv.innerHTML = `
+        <div class="p-2 bg-gray-50 rounded text-sm">
+            <p>التكلفة القياسية: <strong>${item.cost.toFixed(2)} ج.م</strong> لكل ${item.unit}</p>
+        </div>
+    `;
+    
+    calculateCost();
+}
+
+function calculateCost() {
+    const itemId = document.getElementById('item_id').value;
+    const qty = parseFloat(document.getElementById('qty').value) || 0;
+    
+    if (!itemId || qty <= 0) {
+        document.getElementById('qty-display').textContent = '0.000';
+        document.getElementById('total-cost').textContent = '0.00 ج.م';
+        return;
+    }
+    
+    const item = itemsData[itemId];
+    const totalCost = qty * item.cost;
+    
+    document.getElementById('qty-display').textContent = qty.toFixed(3) + ' ' + item.unit;
+    document.getElementById('total-cost').textContent = totalCost.toFixed(2) + ' ج.م';
+    
+    // Check availability (in production, use real data)
+    const availabilityInfo = document.getElementById('availability-info');
+    // Simulate availability check
+    const available = 100; // This should come from server
+    
+    if (qty > available) {
+        availabilityInfo.innerHTML = `
+            <p class="text-sm text-red-600">
+                <i class="fas fa-exclamation-triangle ml-1"></i>
+                الكمية المطلوبة تتجاوز المتاح (${available.toFixed(3)} ${item.unit})
+            </p>
+        `;
+        document.getElementById('submit-btn').disabled = true;
+        document.getElementById('submit-btn').classList.add('opacity-50', 'cursor-not-allowed');
+    } else {
+        availabilityInfo.innerHTML = `
+            <p class="text-sm text-green-600">
+                <i class="fas fa-check-circle ml-1"></i>
+                متاح: ${available.toFixed(3)} ${item.unit}
+            </p>
+        `;
+        document.getElementById('submit-btn').disabled = false;
+        document.getElementById('submit-btn').classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+}
+
+// Show/hide stage expense info
+document.getElementById('stage_id').addEventListener('change', function() {
+    const stageInfo = document.getElementById('stage-expense-info');
+    if (this.value) {
+        stageInfo.classList.remove('hidden');
+    } else {
+        stageInfo.classList.add('hidden');
+    }
+});
+
+// Form validation
+document.getElementById('issue-form').addEventListener('submit', function(e) {
+    const qty = parseFloat(document.getElementById('qty').value) || 0;
+    
+    if (qty <= 0) {
+        e.preventDefault();
+        alert('الرجاء إدخال كمية صحيحة');
+        return false;
+    }
+    
+    if (!confirm('هل أنت متأكد من صرف هذه المواد؟')) {
+        e.preventDefault();
+        return false;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}المصروفات - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">المصروفات</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="md:flex md:items-center md:justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-money-bill-wave ml-2"></i>
+                المصروفات
+            </h1>
+            <div class="mt-4 flex md:mt-0 md:mr-4">
+                <a href="/project/{{ project.id }}/expenses/create/" 
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                    <i class="fas fa-plus ml-2"></i>
+                    إضافة مصروف
+                </a>
+            </div>
+        </div>
+        
+        <!-- Summary Cards -->
+        {% if totals %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">عدد المصروفات</p>
+                <p class="text-2xl font-bold text-gray-900">{{ totals.count|default:0 }}</p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">إجمالي المصروفات</p>
+                <p class="text-2xl font-bold text-gray-900">{{ totals.total|default:0|floatformat:2|intcomma }} ج.م</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- By Category -->
+        {% if by_category %}
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <h3 class="text-lg font-medium text-gray-900 mb-3">المصروفات حسب الفئة</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {% for cat in by_category %}
+                <div class="text-center">
+                    <p class="text-sm text-gray-500">{{ cat.category }}</p>
+                    <p class="text-lg font-semibold text-gray-900">{{ cat.total|floatformat:2|intcomma }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Expenses Table -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                التاريخ
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                المرحلة
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                الفئة
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                البيان
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                المستفيد
+                            </th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                المبلغ
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for expense in expenses %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ expense.date }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {% if expense.stage %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                    {{ expense.stage.name }}
+                                </span>
+                                {% else %}
+                                -
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ expense.get_category_display }}
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                {{ expense.description|truncatechars:50 }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ expense.get_payee_display }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ expense.amount|floatformat:2|intcomma }} ج.م
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center">
+                                <i class="fas fa-money-bill-wave text-6xl text-gray-300 mb-4"></i>
+                                <p class="text-gray-500">لا توجد مصروفات</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

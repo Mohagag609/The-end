@@ -1,0 +1,214 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}محافظ الشركاء - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/partners/" class="text-gray-500 hover:text-gray-700">الشركاء</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">المحافظ</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="md:flex md:items-center md:justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-wallet ml-2 text-blue-600"></i>
+                محافظ الشركاء
+            </h1>
+            <div class="mt-4 flex md:mt-0 md:mr-4 space-x-reverse space-x-2">
+                <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
+                   class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700">
+                    <i class="fas fa-arrow-down ml-2"></i>
+                    سند قبض
+                </a>
+                <a href="/project/{{ project.id }}/partners/voucher/payment/" 
+                   class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700">
+                    <i class="fas fa-arrow-up ml-2"></i>
+                    سند صرف
+                </a>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">إجمالي الأرصدة</p>
+                <p class="text-2xl font-bold text-blue-600">
+                    {{ totals.balance|floatformat:2|intcomma }} ج.م
+                </p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">إجمالي الإيداعات</p>
+                <p class="text-2xl font-bold text-green-600">
+                    {{ totals.deposits|floatformat:2|intcomma }} ج.م
+                </p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">إجمالي السحوبات</p>
+                <p class="text-2xl font-bold text-red-600">
+                    {{ totals.withdrawals|floatformat:2|intcomma }} ج.م
+                </p>
+            </div>
+            <div class="bg-white rounded-lg shadow p-4">
+                <p class="text-sm text-gray-500">المتاح للصرف</p>
+                <p class="text-2xl font-bold text-purple-600">
+                    {{ totals.available|floatformat:2|intcomma }} ج.م
+                </p>
+            </div>
+        </div>
+
+        <!-- Wallets Table -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">تفاصيل المحافظ</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الشريك</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الحصة %</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الرصيد الحالي</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">حد الائتمان</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المتاح للصرف</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الأولوية</th>
+                            <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for wallet in wallets %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
+                                            <span class="text-sm font-medium text-gray-700">
+                                                {{ wallet.partner.partner.name|slice:":1" }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="mr-4">
+                                        <div class="text-sm font-medium text-gray-900">
+                                            {{ wallet.partner.partner.name }}
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            {{ wallet.partner.partner.phone }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                {{ wallet.partner.share_pct }}%
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium 
+                                {% if wallet.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ wallet.balance|floatformat:2|intcomma }} ج.م
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ wallet.credit_limit|floatformat:2|intcomma }} ج.م
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-purple-600">
+                                {{ wallet.available|floatformat:2|intcomma }} ج.م
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if wallet.priority == 1 %}bg-red-100 text-red-800
+                                    {% elif wallet.priority == 2 %}bg-yellow-100 text-yellow-800
+                                    {% else %}bg-green-100 text-green-800{% endif %}">
+                                    أولوية {{ wallet.priority }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                <a href="{% url 'partners:wallet_statement' project.id wallet.partner.id %}" 
+                                   class="text-primary-600 hover:text-primary-900 ml-4">
+                                    كشف حساب
+                                </a>
+                                <a href="/project/{{ project.id }}/partners/voucher/receipt/?partner={{ wallet.partner.partner.id }}" 
+                                   class="text-green-600 hover:text-green-900 ml-4">
+                                    إيداع
+                                </a>
+                                {% if wallet.available > 0 %}
+                                <a href="/project/{{ project.id }}/partners/voucher/payment/?partner={{ wallet.partner.partner.id }}" 
+                                   class="text-red-600 hover:text-red-900 ml-4">
+                                    سحب
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">آخر المعاملات</h2>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">رقم السند</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الشريك</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">النوع</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المبلغ</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">البيان</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for transaction in recent_transactions %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ transaction.date }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                {{ transaction.ref_no }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                {{ transaction.partner.name }}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                {% if transaction.type == 'receipt' %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                    <i class="fas fa-arrow-down ml-1"></i>
+                                    إيداع
+                                </span>
+                                {% else %}
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                    <i class="fas fa-arrow-up ml-1"></i>
+                                    سحب
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium 
+                                {% if transaction.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ transaction.amount|floatformat:2|intcomma }} ج.م
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                {{ transaction.description|truncatewords:10 }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

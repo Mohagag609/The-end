@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}المراحل{% endblock %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-layer-group ml-2"></i>
+            مراحل المشروع
+        </h1>
+        <div class="mb-4">
+            <a href="/project/{{ project.id }}/stages/add/" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة مرحلة
+            </a>
+        </div>
+        {% if stages %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for stage in stages %}
+            <div class="border rounded-lg p-4">
+                <h3 class="font-bold text-lg mb-2">{{ stage.name }}</h3>
+                <p class="text-gray-600 text-sm mb-2">{{ stage.description|truncatechars:50 }}</p>
+                <div class="flex justify-between text-sm">
+                    <span>الميزانية: {{ stage.budget }}</span>
+                    <span class="{% if stage.status == 'active' %}text-green-600{% else %}text-gray-600{% endif %}">
+                        {{ stage.get_status_display|default:stage.status }}
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">لا توجد مراحل حتى الآن</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

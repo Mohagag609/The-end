@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}خطأ{% endblock %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6 text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+        <h1 class="text-2xl font-bold text-gray-900 mb-2">عذراً، حدث خطأ</h1>
+        <p class="text-gray-600 mb-4">{{ message|default:"الصفحة المطلوبة غير متاحة حالياً" }}</p>
+        <a href="/" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            العودة للرئيسية
+        </a>
+    </div>
+</div>
+{% endblock %}

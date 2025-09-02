@@ -1,0 +1,230 @@
+{% extends 'base_with_sidebar.html' %}
+{% load humanize %}
+
+{% block title %}المحافظ - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a>
+<span class="text-gray-400 mx-2">/</span>
+<a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a>
+<span class="text-gray-400 mx-2">/</span>
+<span class="text-gray-700 font-medium">المحافظ</span>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">محافظ الشركاء</h1>
+                <p class="text-sm text-gray-600 mt-1">أرصدة وحركات محافظ الشركاء</p>
+            </div>
+            <div class="flex space-x-reverse space-x-3">
+                <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
+                   class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                    <i class="fas fa-arrow-down ml-2"></i>
+                    سند قبض
+                </a>
+                <a href="/project/{{ project.id }}/partners/voucher/payment/" 
+                   class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center">
+                    <i class="fas fa-arrow-up ml-2"></i>
+                    سند صرف
+                </a>
+                <a href="/project/{{ project.id }}/partners/vouchers/" 
+                   class="bg-white text-gray-700 px-4 py-2 rounded-lg border hover:bg-gray-50 transition-colors flex items-center">
+                    <i class="fas fa-list ml-2"></i>
+                    كل السندات
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي الإيداعات</p>
+                    <p class="text-2xl font-bold text-green-600">
+                        {{ totals.deposits|floatformat:0|intcomma }}
+                    </p>
+                    <p class="text-xs text-gray-500">ج.م</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-arrow-down text-green-600"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي المسحوبات</p>
+                    <p class="text-2xl font-bold text-red-600">
+                        {{ totals.withdrawals|floatformat:0|intcomma }}
+                    </p>
+                    <p class="text-xs text-gray-500">ج.م</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <i class="fas fa-arrow-up text-red-600"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">صافي الرصيد</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        {{ totals.balance|floatformat:0|intcomma }}
+                    </p>
+                    <p class="text-xs text-gray-500">ج.م</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-wallet text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">المتاح للصرف</p>
+                    <p class="text-2xl font-bold text-primary-600">
+                        {{ totals.available|floatformat:0|intcomma }}
+                    </p>
+                    <p class="text-xs text-gray-500">ج.م</p>
+                </div>
+                <div class="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                    <i class="fas fa-hand-holding-usd text-primary-600"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Wallets Table -->
+    <div class="bg-white rounded-lg shadow-sm">
+        <div class="px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-gray-900">تفاصيل المحافظ</h2>
+        </div>
+        
+        {% if wallets %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الشريك
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الحصة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الإيداعات
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المسحوبات
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            الرصيد
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            حد الائتمان
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            المتاح
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            آخر حركة
+                        </th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            إجراءات
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for wallet in wallets %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center ml-3">
+                                    <span class="text-xs font-medium text-gray-600">
+                                        {{ wallet.partner.name|slice:":1" }}
+                                    </span>
+                                </div>
+                                <div class="text-sm font-medium text-gray-900">
+                                    {{ wallet.partner.name }}
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {{ wallet.share_pct }}%
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
+                            {{ wallet.deposits|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-red-600">
+                            {{ wallet.withdrawals|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold 
+                            {% if wallet.balance >= 0 %}text-gray-900{% else %}text-red-600{% endif %}">
+                            {{ wallet.balance|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if wallet.credit_limit > 0 %}
+                                {{ wallet.credit_limit|floatformat:0|intcomma }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-primary-600">
+                            {{ wallet.available|floatformat:0|intcomma }}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {% if wallet.last_movement %}
+                                <span class="{% if wallet.last_movement.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {% if wallet.last_movement.type == 'receipt' %}
+                                        <i class="fas fa-arrow-down"></i>
+                                    {% else %}
+                                        <i class="fas fa-arrow-up"></i>
+                                    {% endif %}
+                                    {{ wallet.last_movement.amount|floatformat:0|intcomma }}
+                                </span>
+                                <br>
+                                <span class="text-xs text-gray-400">{{ wallet.last_movement.date }}</span>
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex space-x-reverse space-x-2">
+                                <a href="#" 
+                                   class="text-primary-600 hover:text-primary-900" title="كشف حساب">
+                                    <i class="fas fa-file-alt"></i>
+                                </a>
+                                <a href="#" 
+                                   class="text-blue-600 hover:text-blue-900" title="تفاصيل">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <i class="fas fa-wallet text-gray-400 text-5xl mb-4"></i>
+            <p class="text-gray-500">لا توجد محافظ حتى الآن</p>
+            <a href="/project/{{ project.id }}/partners/add/" 
+               class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة شريك
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

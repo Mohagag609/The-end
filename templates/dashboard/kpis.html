@@ -1,0 +1,370 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}مؤشرات الأداء - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">مؤشرات الأداء</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-chart-line ml-2 text-primary-600"></i>
+                مؤشرات الأداء الرئيسية (KPIs)
+            </h1>
+            <p class="text-sm text-gray-600 mt-1">آخر تحديث: {% now "Y-m-d H:i" %}</p>
+        </div>
+        
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <!-- ROI -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-gray-500">العائد على الاستثمار</h3>
+                    <i class="fas fa-chart-pie text-green-500"></i>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">{{ kpis.roi|floatformat:1 }}%</p>
+                <div class="mt-2 flex items-center text-sm">
+                    {% if kpis.roi_trend >= 0 %}
+                    <i class="fas fa-arrow-up text-green-500 ml-1"></i>
+                    <span class="text-green-600">+{{ kpis.roi_trend|floatformat:1 }}%</span>
+                    {% else %}
+                    <i class="fas fa-arrow-down text-red-500 ml-1"></i>
+                    <span class="text-red-600">{{ kpis.roi_trend|floatformat:1 }}%</span>
+                    {% endif %}
+                    <span class="text-gray-500 mr-2">من الشهر الماضي</span>
+                </div>
+            </div>
+            
+            <!-- Cost Performance Index -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-gray-500">مؤشر أداء التكلفة</h3>
+                    <i class="fas fa-tachometer-alt text-blue-500"></i>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">{{ kpis.cpi|floatformat:2 }}</p>
+                <div class="mt-2">
+                    <div class="w-full bg-gray-200 rounded-full h-2">
+                        <div class="h-2 rounded-full 
+                            {% if kpis.cpi >= 1 %}bg-green-600
+                            {% elif kpis.cpi >= 0.9 %}bg-yellow-600
+                            {% else %}bg-red-600{% endif %}"
+                            style="width: {{ kpis.cpi_pct }}%"></div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {% if kpis.cpi >= 1 %}أداء ممتاز
+                        {% elif kpis.cpi >= 0.9 %}أداء جيد
+                        {% else %}يحتاج تحسين{% endif %}
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Burn Rate -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-gray-500">معدل الصرف الشهري</h3>
+                    <i class="fas fa-fire text-orange-500"></i>
+                </div>
+                <p class="text-3xl font-bold text-gray-900">
+                    {{ kpis.burn_rate|floatformat:0|intcomma }}
+                </p>
+                <p class="text-sm text-gray-500">ج.م/شهر</p>
+                <div class="mt-2 text-sm text-gray-600">
+                    <span>المتبقي: </span>
+                    <span class="font-medium">{{ kpis.months_remaining|floatformat:0 }} شهر</span>
+                </div>
+            </div>
+            
+            <!-- Cash Flow -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-medium text-gray-500">التدفق النقدي</h3>
+                    <i class="fas fa-money-bill-wave text-purple-500"></i>
+                </div>
+                <p class="text-3xl font-bold 
+                   {% if kpis.cash_flow >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ kpis.cash_flow|floatformat:0|intcomma }}
+                </p>
+                <p class="text-sm text-gray-500">ج.م</p>
+                <div class="mt-2 text-sm">
+                    <span class="text-gray-600">نسبة السيولة: </span>
+                    <span class="font-medium">{{ kpis.liquidity_ratio|floatformat:1 }}x</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Charts Row 1 -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <!-- Cost Breakdown Chart -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">توزيع التكاليف</h2>
+                <canvas id="costBreakdownChart" height="300"></canvas>
+            </div>
+            
+            <!-- Monthly Expenses Trend -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">اتجاه المصروفات الشهرية</h2>
+                <canvas id="monthlyTrendChart" height="300"></canvas>
+            </div>
+        </div>
+        
+        <!-- Charts Row 2 -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            <!-- Stage Progress -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">تقدم المراحل</h2>
+                <canvas id="stageProgressChart" height="250"></canvas>
+            </div>
+            
+            <!-- Partner Contributions -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">مساهمات الشركاء</h2>
+                <canvas id="partnerContributionsChart" height="250"></canvas>
+            </div>
+            
+            <!-- Budget vs Actual -->
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-lg font-medium text-gray-900 mb-4">الميزانية مقابل الفعلي</h2>
+                <canvas id="budgetActualChart" height="250"></canvas>
+            </div>
+        </div>
+        
+        <!-- Performance Metrics Table -->
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">مقاييس الأداء التفصيلية</h2>
+            </div>
+            <div class="px-6 py-4">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-500">نسبة الإنجاز</p>
+                        <p class="text-lg font-semibold">{{ kpis.completion_rate|floatformat:1 }}%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">كفاءة التكلفة</p>
+                        <p class="text-lg font-semibold">{{ kpis.cost_efficiency|floatformat:1 }}%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">معدل استخدام الميزانية</p>
+                        <p class="text-lg font-semibold">{{ kpis.budget_utilization|floatformat:1 }}%</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">متوسط تأخير المدفوعات</p>
+                        <p class="text-lg font-semibold">{{ kpis.avg_payment_delay }} يوم</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// Cost Breakdown Chart
+const costBreakdownCtx = document.getElementById('costBreakdownChart').getContext('2d');
+new Chart(costBreakdownCtx, {
+    type: 'doughnut',
+    data: {
+        labels: ['مواد', 'عمالة', 'مقاولات', 'إدارية', 'أخرى'],
+        datasets: [{
+            data: {{ cost_breakdown|safe }},
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(251, 146, 60, 0.8)',
+                'rgba(147, 51, 234, 0.8)',
+                'rgba(107, 114, 128, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    font: { size: 11 }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const label = context.label || '';
+                        const value = context.parsed || 0;
+                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                        const percentage = ((value / total) * 100).toFixed(1);
+                        return label + ': ' + value.toLocaleString('ar-EG') + ' ج.م (' + percentage + '%)';
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Monthly Trend Chart
+const monthlyTrendCtx = document.getElementById('monthlyTrendChart').getContext('2d');
+new Chart(monthlyTrendCtx, {
+    type: 'line',
+    data: {
+        labels: {{ monthly_labels|safe }},
+        datasets: [{
+            label: 'المصروفات',
+            data: {{ monthly_expenses|safe }},
+            borderColor: 'rgba(239, 68, 68, 1)',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            tension: 0.4
+        }, {
+            label: 'الإيداعات',
+            data: {{ monthly_deposits|safe }},
+            borderColor: 'rgba(16, 185, 129, 1)',
+            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+            tension: 0.4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return (value / 1000).toFixed(0) + 'k';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                position: 'bottom'
+            }
+        }
+    }
+});
+
+// Stage Progress Chart
+const stageProgressCtx = document.getElementById('stageProgressChart').getContext('2d');
+new Chart(stageProgressCtx, {
+    type: 'radar',
+    data: {
+        labels: {{ stage_names|safe }},
+        datasets: [{
+            label: 'نسبة الإنجاز',
+            data: {{ stage_progress|safe }},
+            borderColor: 'rgba(59, 130, 246, 1)',
+            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+            pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            r: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    stepSize: 20
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            }
+        }
+    }
+});
+
+// Partner Contributions Chart
+const partnerContributionsCtx = document.getElementById('partnerContributionsChart').getContext('2d');
+new Chart(partnerContributionsCtx, {
+    type: 'pie',
+    data: {
+        labels: {{ partner_names|safe }},
+        datasets: [{
+            data: {{ partner_contributions|safe }},
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(16, 185, 129, 0.8)',
+                'rgba(251, 146, 60, 0.8)',
+                'rgba(147, 51, 234, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 10,
+                    font: { size: 10 }
+                }
+            }
+        }
+    }
+});
+
+// Budget vs Actual Chart
+const budgetActualCtx = document.getElementById('budgetActualChart').getContext('2d');
+new Chart(budgetActualCtx, {
+    type: 'bar',
+    data: {
+        labels: ['الميزانية', 'الفعلي', 'المتبقي'],
+        datasets: [{
+            data: {{ budget_actual_data|safe }},
+            backgroundColor: [
+                'rgba(59, 130, 246, 0.8)',
+                'rgba(239, 68, 68, 0.8)',
+                'rgba(107, 114, 128, 0.8)'
+            ]
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return (value / 1000).toFixed(0) + 'k';
+                    }
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return context.parsed.y.toLocaleString('ar-EG') + ' ج.م';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}

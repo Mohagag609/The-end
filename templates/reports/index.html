@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+
+{% block title %}التقارير - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">التقارير</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">
+            <i class="fas fa-chart-bar ml-2"></i>
+            التقارير والكشوفات
+        </h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Partners Report -->
+            <a href="{% url 'reports:partners' project.id %}" 
+               class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+                <div class="flex items-center mb-4">
+                    <div class="rounded-full bg-blue-100 p-3">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                    <h3 class="mr-4 text-lg font-medium text-gray-900">كشف حساب الشركاء</h3>
+                </div>
+                <p class="text-sm text-gray-500">
+                    عرض تفصيلي لحسابات جميع الشركاء مع الإيداعات والسحوبات والأرصدة
+                </p>
+            </a>
+            
+            <!-- Suppliers Report -->
+            <a href="{% url 'reports:suppliers' project.id %}" 
+               class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+                <div class="flex items-center mb-4">
+                    <div class="rounded-full bg-green-100 p-3">
+                        <i class="fas fa-truck text-green-600 text-xl"></i>
+                    </div>
+                    <h3 class="mr-4 text-lg font-medium text-gray-900">كشف حساب الموردين</h3>
+                </div>
+                <p class="text-sm text-gray-500">
+                    عرض تفصيلي لحسابات الموردين مع المشتريات والمدفوعات
+                </p>
+            </a>
+            
+            <!-- Iron Report -->
+            <a href="{% url 'reports:iron' project.id %}" 
+               class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+                <div class="flex items-center mb-4">
+                    <div class="rounded-full bg-gray-100 p-3">
+                        <i class="fas fa-industry text-gray-600 text-xl"></i>
+                    </div>
+                    <h3 class="mr-4 text-lg font-medium text-gray-900">كشف حساب الحديد</h3>
+                </div>
+                <p class="text-sm text-gray-500">
+                    تقرير مفصل عن مشتريات الحديد بأنواعه المختلفة
+                </p>
+            </a>
+            
+            <!-- Expenses Report -->
+            <a href="/project/{{ project.id }}/expenses/" 
+               class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+                <div class="flex items-center mb-4">
+                    <div class="rounded-full bg-red-100 p-3">
+                        <i class="fas fa-money-bill-wave text-red-600 text-xl"></i>
+                    </div>
+                    <h3 class="mr-4 text-lg font-medium text-gray-900">تقرير المصروفات</h3>
+                </div>
+                <p class="text-sm text-gray-500">
+                    عرض جميع المصروفات مصنفة حسب الفئة والمرحلة
+                </p>
+            </a>
+            
+            <!-- Inventory Report -->
+            <a href="/project/{{ project.id }}/inventory/movements/" 
+               class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+                <div class="flex items-center mb-4">
+                    <div class="rounded-full bg-yellow-100 p-3">
+                        <i class="fas fa-warehouse text-yellow-600 text-xl"></i>
+                    </div>
+                    <h3 class="mr-4 text-lg font-medium text-gray-900">حركات المخزون</h3>
+                </div>
+                <p class="text-sm text-gray-500">
+                    تقرير بجميع حركات المخزون (وارد وصادر)
+                </p>
+            </a>
+            
+            <!-- Settlements Report -->
+            <a href="/project/{{ project.id }}/settlements/" 
+               class="block bg-white rounded-lg shadow hover:shadow-lg transition-shadow p-6">
+                <div class="flex items-center mb-4">
+                    <div class="rounded-full bg-purple-100 p-3">
+                        <i class="fas fa-balance-scale text-purple-600 text-xl"></i>
+                    </div>
+                    <h3 class="mr-4 text-lg font-medium text-gray-900">التسويات الدورية</h3>
+                </div>
+                <p class="text-sm text-gray-500">
+                    عرض التسويات بين الشركاء والمطالبات
+                </p>
+            </a>
+        </div>
+        
+        <!-- Export Section -->
+        <div class="mt-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-lg font-medium text-gray-900 mb-4">
+                <i class="fas fa-download ml-2"></i>
+                تصدير البيانات
+            </h2>
+            <div class="flex flex-wrap gap-3">
+                <a href="{% url 'reports:export' project.id %}?type=partners" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="fas fa-file-csv ml-2 text-green-600"></i>
+                    تصدير الشركاء CSV
+                </a>
+                <a href="{% url 'reports:export' project.id %}?type=expenses" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="fas fa-file-csv ml-2 text-green-600"></i>
+                    تصدير المصروفات CSV
+                </a>
+                <a href="{% url 'reports:export' project.id %}?type=purchases" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="fas fa-file-csv ml-2 text-green-600"></i>
+                    تصدير المشتريات CSV
+                </a>
+                <a href="{% url 'reports:export' project.id %}?type=stock" 
+                   class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    <i class="fas fa-file-csv ml-2 text-green-600"></i>
+                    تصدير المخزون CSV
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

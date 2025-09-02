@@ -1,0 +1,301 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}فاتورة شراء جديدة - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/purchases/" class="text-gray-500 hover:text-gray-700">المشتريات</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">فاتورة جديدة</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200 bg-blue-50">
+                <h1 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-file-invoice ml-2 text-blue-600"></i>
+                    إنشاء فاتورة شراء
+                </h1>
+            </div>
+            
+            <form method="POST" enctype="multipart/form-data" class="px-6 py-4">
+                {% csrf_token %}
+                
+                <!-- Invoice Header -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <!-- Supplier -->
+                    <div>
+                        <label for="supplier_id" class="block text-sm font-medium text-gray-700">
+                            المورد <span class="text-red-500">*</span>
+                        </label>
+                        <select name="supplier_id" id="supplier_id" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                            <option value="">اختر المورد</option>
+                            {% for supplier in suppliers %}
+                            <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <!-- Invoice Number -->
+                    <div>
+                        <label for="invoice_no" class="block text-sm font-medium text-gray-700">
+                            رقم الفاتورة <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="invoice_no" id="invoice_no" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                               placeholder="INV-2024-001">
+                    </div>
+                    
+                    <!-- Date -->
+                    <div>
+                        <label for="date" class="block text-sm font-medium text-gray-700">
+                            التاريخ <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" name="date" id="date" required
+                               value="{{ today|date:'Y-m-d' }}"
+                               max="{{ today|date:'Y-m-d' }}"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                    </div>
+                </div>
+                
+                <!-- Items Section -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">
+                        <i class="fas fa-list ml-2"></i>
+                        بنود الفاتورة
+                    </h3>
+                    
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">الصنف</th>
+                                    <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">الكمية</th>
+                                    <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">السعر</th>
+                                    <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">الضريبة %</th>
+                                    <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">الإجمالي</th>
+                                    <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">حذف</th>
+                                </tr>
+                            </thead>
+                            <tbody id="items-tbody" class="bg-white divide-y divide-gray-200">
+                                <!-- Items will be added here dynamically -->
+                            </tbody>
+                            <tfoot class="bg-gray-50">
+                                <tr>
+                                    <td colspan="4" class="px-3 py-3 text-left font-medium">المجموع الفرعي:</td>
+                                    <td class="px-3 py-3 text-left font-bold" id="subtotal">0.00 ج.م</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="px-3 py-3 text-left font-medium">الضرائب:</td>
+                                    <td class="px-3 py-3 text-left font-bold" id="tax-total">0.00 ج.م</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="4" class="px-3 py-3 text-left font-medium text-lg">الإجمالي:</td>
+                                    <td class="px-3 py-3 text-left font-bold text-lg text-primary-600" id="grand-total">0.00 ج.م</td>
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <button type="button" onclick="addItem()" 
+                            class="mt-4 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        <i class="fas fa-plus ml-2"></i>
+                        إضافة صنف
+                    </button>
+                </div>
+                
+                <!-- Additional Fields -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label for="notes" class="block text-sm font-medium text-gray-700">
+                            ملاحظات
+                        </label>
+                        <textarea name="notes" id="notes" rows="3"
+                                  class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                                  placeholder="ملاحظات على الفاتورة..."></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="attachment" class="block text-sm font-medium text-gray-700">
+                            المرفق
+                        </label>
+                        <input type="file" name="attachment" id="attachment"
+                               accept="image/*,application/pdf"
+                               class="mt-1 block w-full text-sm text-gray-500
+                                      file:mr-4 file:py-2 file:px-4
+                                      file:rounded-md file:border-0
+                                      file:text-sm file:font-semibold
+                                      file:bg-primary-50 file:text-primary-700
+                                      hover:file:bg-primary-100">
+                        <p class="mt-1 text-xs text-gray-500">PDF أو صور للفاتورة الأصلية</p>
+                    </div>
+                </div>
+                
+                <!-- Post Invoice Option -->
+                <div class="mb-6">
+                    <label class="flex items-center">
+                        <input type="checkbox" name="post_invoice" id="post_invoice" checked
+                               class="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-500 focus:ring-primary-500">
+                        <span class="mr-2 text-sm text-gray-700">
+                            ترحيل الفاتورة مباشرة (سيتم إضافة الأصناف للمخزون)
+                        </span>
+                    </label>
+                </div>
+                
+                <!-- Submit Buttons -->
+                <div class="flex justify-end space-x-reverse space-x-3">
+                    <a href="/project/{{ project.id }}/purchases/" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        إلغاء
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                        <i class="fas fa-save ml-2"></i>
+                        حفظ الفاتورة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Item Template -->
+<template id="item-row-template">
+    <tr class="item-row">
+        <td class="px-3 py-2">
+            <select name="item_id[]" class="item-select w-full rounded-md border-gray-300 text-sm" required onchange="updateItemDetails(this)">
+                <option value="">اختر الصنف</option>
+                {% for item in items %}
+                <option value="{{ item.id }}" 
+                        data-unit="{{ item.get_uom_display }}"
+                        data-cost="{{ item.std_cost }}">
+                    {{ item.name }} ({{ item.sku }})
+                </option>
+                {% endfor %}
+            </select>
+        </td>
+        <td class="px-3 py-2">
+            <div class="flex items-center">
+                <input type="number" name="qty[]" step="0.001" min="0.001" required
+                       class="qty-input w-24 rounded-md border-gray-300 text-sm"
+                       placeholder="0.000" onchange="calculateRow(this)">
+                <span class="unit-display mr-2 text-sm text-gray-500"></span>
+            </div>
+        </td>
+        <td class="px-3 py-2">
+            <input type="number" name="unit_cost[]" step="0.0001" min="0.0001" required
+                   class="cost-input w-32 rounded-md border-gray-300 text-sm"
+                   placeholder="0.0000" onchange="calculateRow(this)">
+        </td>
+        <td class="px-3 py-2">
+            <input type="number" name="tax_rate[]" step="0.01" min="0" max="100" value="14"
+                   class="tax-input w-20 rounded-md border-gray-300 text-sm"
+                   placeholder="14" onchange="calculateRow(this)">
+        </td>
+        <td class="px-3 py-2">
+            <span class="row-total font-medium">0.00 ج.م</span>
+        </td>
+        <td class="px-3 py-2 text-center">
+            <button type="button" onclick="removeItem(this)" 
+                    class="text-red-600 hover:text-red-900">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+
+<script>
+let itemCount = 0;
+
+function addItem() {
+    const template = document.getElementById('item-row-template');
+    const tbody = document.getElementById('items-tbody');
+    const clone = template.content.cloneNode(true);
+    
+    // Update IDs
+    itemCount++;
+    const row = clone.querySelector('tr');
+    row.id = `item-row-${itemCount}`;
+    
+    tbody.appendChild(clone);
+}
+
+function removeItem(button) {
+    const row = button.closest('tr');
+    row.remove();
+    calculateTotals();
+}
+
+function updateItemDetails(select) {
+    const row = select.closest('tr');
+    const option = select.options[select.selectedIndex];
+    
+    if (option.value) {
+        const unit = option.dataset.unit;
+        const cost = option.dataset.cost;
+        
+        row.querySelector('.unit-display').textContent = unit;
+        row.querySelector('.cost-input').value = cost;
+        
+        calculateRow(select);
+    }
+}
+
+function calculateRow(input) {
+    const row = input.closest('tr');
+    const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+    const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+    const taxRate = parseFloat(row.querySelector('.tax-input').value) || 0;
+    
+    const subtotal = qty * cost;
+    const tax = subtotal * (taxRate / 100);
+    const total = subtotal + tax;
+    
+    row.querySelector('.row-total').textContent = total.toFixed(2) + ' ج.م';
+    
+    calculateTotals();
+}
+
+function calculateTotals() {
+    let subtotal = 0;
+    let taxTotal = 0;
+    
+    document.querySelectorAll('.item-row').forEach(row => {
+        const qty = parseFloat(row.querySelector('.qty-input').value) || 0;
+        const cost = parseFloat(row.querySelector('.cost-input').value) || 0;
+        const taxRate = parseFloat(row.querySelector('.tax-input').value) || 0;
+        
+        const rowSubtotal = qty * cost;
+        const rowTax = rowSubtotal * (taxRate / 100);
+        
+        subtotal += rowSubtotal;
+        taxTotal += rowTax;
+    });
+    
+    const grandTotal = subtotal + taxTotal;
+    
+    document.getElementById('subtotal').textContent = subtotal.toFixed(2) + ' ج.م';
+    document.getElementById('tax-total').textContent = taxTotal.toFixed(2) + ' ج.م';
+    document.getElementById('grand-total').textContent = grandTotal.toFixed(2) + ' ج.م';
+}
+
+// Add first item on load
+document.addEventListener('DOMContentLoaded', function() {
+    addItem();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,337 @@
+{% extends 'base_with_sidebar.html' %}
+{% load humanize %}
+
+{% block title %}{{ project.name }} - لوحة التحكم{% endblock %}
+
+{% block breadcrumb %}
+<a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a>
+<span class="text-gray-400 mx-2">/</span>
+<span class="text-gray-700 font-medium">{{ project.name }}</span>
+{% endblock %}
+
+{% block content %}
+<div class="p-6">
+    <!-- Project Header -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">{{ project.name }}</h1>
+                <p class="text-sm text-gray-600 mt-1">{{ project.code }} • {{ project.description }}</p>
+            </div>
+            <div class="flex items-center space-x-reverse space-x-2">
+                <span class="px-3 py-1 rounded-full text-sm font-medium
+                    {% if project.status == 'active' %}bg-green-100 text-green-800
+                    {% elif project.status == 'pending' %}bg-yellow-100 text-yellow-800
+                    {% else %}bg-gray-100 text-gray-800{% endif %}">
+                    {% if project.status == 'active' %}نشط
+                    {% elif project.status == 'pending' %}معلق
+                    {% else %}مغلق{% endif %}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <!-- Total Budget -->
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي الميزانية</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">
+                        {{ stats.total_budget|default:0|floatformat:0|intcomma }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">ج.م</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                    <i class="fas fa-coins text-blue-600"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Total Expenses -->
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">إجمالي المصروفات</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">
+                        {{ stats.total_expenses|default:0|floatformat:0|intcomma }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">ج.م</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                    <i class="fas fa-money-bill-wave text-red-600"></i>
+                </div>
+            </div>
+            <div class="mt-2">
+                <div class="flex items-center justify-between text-xs">
+                    <span class="text-gray-500">من الميزانية</span>
+                    <span class="font-medium">{{ stats.expense_percentage|default:0|floatformat:1 }}%</span>
+                </div>
+                <div class="mt-1 w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-red-600 h-2 rounded-full" style="width: {{ stats.expense_percentage|default:0 }}%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Partners Balance -->
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">رصيد المحافظ</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">
+                        {{ stats.net_balance|default:0|floatformat:0|intcomma }}
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">ج.م</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                    <i class="fas fa-wallet text-green-600"></i>
+                </div>
+            </div>
+            <div class="mt-2 flex items-center text-xs">
+                <span class="text-gray-500">{{ stats.partners_count|default:0 }} شريك</span>
+            </div>
+        </div>
+        
+        <!-- Stages Progress -->
+        <div class="bg-white rounded-lg shadow-sm p-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-gray-500">تقدم المراحل</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">
+                        {{ stats.overall_progress|default:0|floatformat:0 }}%
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">{{ stats.stages_count|default:0 }} مرحلة</p>
+                </div>
+                <div class="h-12 w-12 rounded-full bg-indigo-100 flex items-center justify-center">
+                    <i class="fas fa-layer-group text-indigo-600"></i>
+                </div>
+            </div>
+            <div class="mt-2">
+                <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-indigo-600 h-2 rounded-full" style="width: {{ stats.overall_progress|default:0 }}%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Recent Activities (2 columns) -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Recent Expenses -->
+            <div class="bg-white rounded-lg shadow-sm">
+                <div class="px-6 py-4 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-history ml-2 text-gray-400"></i>
+                        آخر المصروفات
+                    </h2>
+                    <a href="/project/{{ project.id }}/expenses/" class="text-sm text-primary-600 hover:text-primary-700">
+                        عرض الكل
+                        <i class="fas fa-arrow-left mr-1"></i>
+                    </a>
+                </div>
+                <div class="p-6">
+                    {% if recent_expenses %}
+                    <div class="space-y-3">
+                        {% for expense in recent_expenses %}
+                        <div class="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50">
+                            <div class="flex items-center">
+                                <div class="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center ml-3">
+                                    <i class="fas fa-receipt text-red-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ expense.description|truncatechars:40 }}</p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ expense.date }} 
+                                        {% if expense.stage %}• {{ expense.stage.name }}{% endif %}
+                                    </p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-semibold text-red-600">
+                                {{ expense.amount|floatformat:0|intcomma }} ج.م
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-gray-500 py-8">لا توجد مصروفات حتى الآن</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Stages Overview -->
+            <div class="bg-white rounded-lg shadow-sm">
+                <div class="px-6 py-4 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-tasks ml-2 text-gray-400"></i>
+                        المراحل
+                    </h2>
+                    <a href="/project/{{ project.id }}/stages/" class="text-sm text-primary-600 hover:text-primary-700">
+                        إدارة المراحل
+                        <i class="fas fa-arrow-left mr-1"></i>
+                    </a>
+                </div>
+                <div class="p-6">
+                    {% if stages %}
+                    <div class="space-y-4">
+                        {% for stage in stages %}
+                        <div class="border rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="font-medium text-gray-900">{{ stage.name }}</h3>
+                                <span class="text-sm text-gray-500">{{ stage.progress|floatformat:0 }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2">
+                                <div class="h-2 rounded-full 
+                                    {% if stage.progress >= 100 %}bg-green-600
+                                    {% elif stage.progress >= 75 %}bg-blue-600
+                                    {% elif stage.progress >= 50 %}bg-yellow-600
+                                    {% elif stage.progress >= 25 %}bg-orange-600
+                                    {% else %}bg-red-600{% endif %}"
+                                    style="width: {{ stage.progress|floatformat:0 }}%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-500">
+                                <span>الميزانية: {{ stage.budget|floatformat:0|intcomma }} ج.م</span>
+                                <span>التكلفة: {{ stage.cost|floatformat:0|intcomma }} ج.م</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-gray-500 py-8">لم يتم إضافة مراحل بعد</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Right Sidebar -->
+        <div class="space-y-6">
+            <!-- Partners Summary -->
+            <div class="bg-white rounded-lg shadow-sm">
+                <div class="px-6 py-4 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-users ml-2 text-gray-400"></i>
+                        الشركاء
+                    </h2>
+                    <a href="/project/{{ project.id }}/partners/" class="text-sm text-primary-600 hover:text-primary-700">
+                        عرض الكل
+                    </a>
+                </div>
+                <div class="p-6">
+                    {% if partners %}
+                    <div class="space-y-3">
+                        {% for partner in partners %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center ml-2">
+                                    <span class="text-xs font-medium text-gray-600">
+                                        {{ partner.partner.name|slice:":1" }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ partner.partner.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ partner.share_pct }}%</p>
+                                </div>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-sm font-medium 
+                                    {% if partner.balance >= 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                                    {{ partner.balance|floatformat:0|intcomma }}
+                                </p>
+                                <p class="text-xs text-gray-500">ج.م</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <!-- Total Shares Check -->
+                    {% if not shares_valid %}
+                    <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-xs text-yellow-800">
+                            <i class="fas fa-exclamation-triangle ml-1"></i>
+                            مجموع الحصص {{ total_shares }}% (يجب أن يكون 100%)
+                        </p>
+                    </div>
+                    {% endif %}
+                    {% else %}
+                    <p class="text-center text-gray-500 py-8">لم يتم إضافة شركاء بعد</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Quick Actions -->
+            <div class="bg-white rounded-lg shadow-sm">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-bolt ml-2 text-gray-400"></i>
+                        إجراءات سريعة
+                    </h2>
+                </div>
+                <div class="p-4">
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="/project/{{ project.id }}/expenses/create/" 
+                           class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-plus text-red-600 mb-1"></i>
+                            <p class="text-xs text-gray-700">مصروف</p>
+                        </a>
+                        <a href="/project/{{ project.id }}/partners/voucher/receipt/" 
+                           class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-arrow-down text-green-600 mb-1"></i>
+                            <p class="text-xs text-gray-700">إيداع</p>
+                        </a>
+                        <a href="/project/{{ project.id }}/purchases/create/" 
+                           class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-file-invoice text-purple-600 mb-1"></i>
+                            <p class="text-xs text-gray-700">فاتورة</p>
+                        </a>
+                        <a href="/project/{{ project.id }}/inventory/issue/" 
+                           class="p-3 text-center rounded-lg border hover:bg-gray-50 transition-colors">
+                            <i class="fas fa-box-open text-orange-600 mb-1"></i>
+                            <p class="text-xs text-gray-700">صرف مواد</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Vouchers -->
+            <div class="bg-white rounded-lg shadow-sm">
+                <div class="px-6 py-4 border-b flex items-center justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-exchange-alt ml-2 text-gray-400"></i>
+                        آخر السندات
+                    </h2>
+                    <a href="/project/{{ project.id }}/partners/wallets/" class="text-sm text-primary-600 hover:text-primary-700">
+                        المحافظ
+                    </a>
+                </div>
+                <div class="p-6">
+                    {% if recent_vouchers %}
+                    <div class="space-y-3">
+                        {% for voucher in recent_vouchers %}
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="h-8 w-8 rounded-full flex items-center justify-center ml-2
+                                    {% if voucher.type == 'receipt' %}bg-green-100{% else %}bg-red-100{% endif %}">
+                                    <i class="fas {% if voucher.type == 'receipt' %}fa-arrow-down text-green-600{% else %}fa-arrow-up text-red-600{% endif %} text-xs"></i>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ voucher.partner.name }}</p>
+                                    <p class="text-xs text-gray-500">{{ voucher.date }}</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-medium 
+                                {% if voucher.type == 'receipt' %}text-green-600{% else %}text-red-600{% endif %}">
+                                {{ voucher.amount|floatformat:0|intcomma }}
+                            </span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-center text-gray-500 py-8">لا توجد سندات حتى الآن</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

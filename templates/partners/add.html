@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+
+{% block title %}إضافة شريك - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="/" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="/project/{{ project.id }}/partners/" class="text-gray-500 hover:text-gray-700">الشركاء</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">إضافة شريك</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-white shadow rounded-lg">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h1 class="text-xl font-bold text-gray-900">
+                    <i class="fas fa-user-plus ml-2"></i>
+                    إضافة شريك جديد
+                </h1>
+            </div>
+            
+            <form method="POST" class="px-6 py-4">
+                {% csrf_token %}
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="partner_name" class="block text-sm font-medium text-gray-700">
+                            اسم الشريك <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="partner_name" id="partner_name" required
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                               placeholder="أدخل اسم الشريك">
+                    </div>
+                    
+                    <div>
+                        <label for="share_pct" class="block text-sm font-medium text-gray-700">
+                            نسبة الحصة (%) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" name="share_pct" id="share_pct" required
+                               min="0.01" max="100" step="0.01"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                               placeholder="مثال: 25.50">
+                        <p class="mt-1 text-sm text-gray-500">
+                            تأكد أن مجموع حصص جميع الشركاء = 100%
+                        </p>
+                    </div>
+                    
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700">
+                            رقم الهاتف
+                        </label>
+                        <input type="tel" name="phone" id="phone"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                               placeholder="01000000000">
+                    </div>
+                    
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">
+                            البريد الإلكتروني
+                        </label>
+                        <input type="email" name="email" id="email"
+                               class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                               placeholder="partner@example.com">
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-end space-x-reverse space-x-3">
+                    <a href="/project/{{ project.id }}/partners/" 
+                       class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        إلغاء
+                    </a>
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                        <i class="fas fa-save ml-2"></i>
+                        حفظ
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
