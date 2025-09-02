@@ -72,8 +72,21 @@
 </head>
 <body class="bg-gray-100 text-gray-900" x-data="{ sidebarOpen: true, projectSwitcher: false }">
     
+    <!-- Overlay for dropdown -->
+    <div x-show="projectSwitcher" 
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         @click="projectSwitcher = false"
+         class="fixed inset-0 bg-black bg-opacity-25 z-40"
+         style="display: none;">
+    </div>
+    
     <!-- Top Header -->
-    <header class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-40">
+    <header class="bg-white shadow-sm border-b fixed top-0 left-0 right-0 z-50">
         <div class="flex items-center justify-between h-16 px-4">
             <!-- Logo & Menu Toggle -->
             <div class="flex items-center">
@@ -87,7 +100,7 @@
             
             <!-- Project Switcher -->
             {% if current_project %}
-            <div class="relative">
+            <div class="relative z-50">
                 <button @click="projectSwitcher = !projectSwitcher" 
                         class="flex items-center px-4 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
                     <div class="text-left ml-2">
@@ -102,8 +115,14 @@
                 <!-- Project Dropdown -->
                 <div x-show="projectSwitcher" 
                      @click.away="projectSwitcher = false"
-                     x-transition
-                     class="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-lg border overflow-hidden">
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="transform opacity-0 scale-95"
+                     x-transition:enter-end="transform opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="transform opacity-100 scale-100"
+                     x-transition:leave-end="transform opacity-0 scale-95"
+                     class="absolute left-0 mt-2 w-64 bg-white rounded-lg shadow-xl border overflow-hidden"
+                     style="z-index: 9999;">
                     <div class="p-2 bg-gray-50 border-b">
                         <p class="text-sm font-medium text-gray-700">تبديل المشروع</p>
                     </div>
@@ -135,7 +154,7 @@
     
     <!-- Sidebar -->
     <aside :class="sidebarOpen ? 'translate-x-0' : 'translate-x-full'" 
-           class="fixed right-0 top-16 bottom-0 w-56 bg-white shadow-lg border-l transition-transform duration-300 z-30 overflow-y-auto">
+           class="fixed right-0 top-16 bottom-0 w-56 bg-white shadow-lg border-l transition-transform duration-300 z-40 overflow-y-auto">
         
         {% if current_project %}
         <!-- Project Info -->
@@ -240,9 +259,11 @@
     </aside>
     
     <!-- Main Content -->
-    <main :class="sidebarOpen ? 'mr-56' : 'mr-0'" class="pt-16 min-h-screen transition-all duration-300">
-        <div class="p-4 lg:p-6 max-w-7xl mx-auto">
-            {% block content %}{% endblock %}
+    <main class="min-h-screen transition-all duration-300">
+        <div class="pt-16" :class="sidebarOpen ? 'pr-56' : 'pr-0'">
+            <div class="container mx-auto px-4 lg:px-6 py-6">
+                {% block content %}{% endblock %}
+            </div>
         </div>
     </main>
     
