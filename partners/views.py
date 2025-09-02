@@ -1,0 +1,208 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.db.models import Sum, Q
+from django.http import JsonResponse
+from decimal import Decimal
+from datetime import datetime
+
+from .models import Partner, ProjectPartner, Voucher, WalletPriority
+from projects.models import Project
+
+def partners_list(request, project_id):
+    """قائمة الشركاء في المشروع"""
+    project = get_object_or_404(Project, id=project_id)
+    partners = ProjectPartner.objects.filter(project=project).select_related('partner')
+    
+    total_shares = partners.aggregate(total=Sum('share_pct'))['total'] or Decimal('0.00')
+    shares_valid = total_shares == Decimal('100.00')
+    
+    for partner in partners:
+        partner.deposits = partner.get_total_receipts()
+        partner.withdrawals = partner.get_total_payments()
+    
+    context = {
+        'project': project,
+        'partners': partners,
+        'total_shares': total_shares,
+        'shares_valid': shares_valid,
+    }
+    
+    return render(request, 'partners/list.html', context)
+
+def add_partner(request, project_id):
+    """إضافة شريك للمشروع"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        partner_name = request.POST.get('partner_name')
+        share_pct = Decimal(request.POST.get('share_pct', '0'))
+        
+        # البحث عن الشريك أو إنشاؤه
+        partner, created = Partner.objects.get_or_create(
+            name=partner_name,
+            defaults={
+                'phone': request.POST.get('phone', ''),
+                'email': request.POST.get('email', ''),
+            }
+        )
+        
+        try:
+            project_partner = ProjectPartner.objects.create(
+                project=project,
+                partner=partner,
+                share_pct=share_pct
+            )
+            messages.success(request, f'تم إضافة الشريك {partner_name} بنجاح')
+        except Exception as e:
+            messages.error(request, str(e))
+        
+        return redirect('partners:list', project_id=project.id)
+    
+    return render(request, 'partners/add.html', {'project': project})
+
+def create_receipt(request, project_id):
+    """إنشاء سند قبض"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        partner_id = request.POST.get('partner_id')
+        amount = Decimal(request.POST.get('amount', '0'))
+        date = request.POST.get('date', datetime.now().date())
+        description = request.POST.get('description', '')
+        
+        project_partner = get_object_or_404(
+            ProjectPartner, 
+            project=project, 
+            partner_id=partner_id
+        )
+        
+        voucher = Voucher.objects.create(
+            project=project,
+            type='receipt',
+            partner=project_partner.partner,
+            project_partner=project_partner,
+            amount=amount,
+            date=date,
+            description=description
+        )
+        
+        messages.success(request, f'تم إنشاء سند القبض رقم {voucher.ref_no}')
+        return redirect('partners:list', project_id=project.id)
+    
+    partners = ProjectPartner.objects.filter(project=project).select_related('partner')
+    return render(request, 'partners/create_receipt.html', {
+        'project': project,
+        'partners': partners
+    })
+
+def create_payment(request, project_id):
+    """إنشاء سند صرف"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        partner_id = request.POST.get('partner_id')
+        amount = Decimal(request.POST.get('amount', '0'))
+        date = request.POST.get('date', datetime.now().date())
+        description = request.POST.get('description', '')
+        
+        project_partner = get_object_or_404(
+            ProjectPartner, 
+            project=project, 
+            partner_id=partner_id
+        )
+        
+        try:
+            voucher = Voucher.objects.create(
+                project=project,
+                type='payment',
+                partner=project_partner.partner,
+                project_partner=project_partner,
+                amount=amount,
+                date=date,
+                description=description
+            )
+            messages.success(request, f'تم إنشاء سند الصرف رقم {voucher.ref_no}')
+        except Exception as e:
+            messages.error(request, str(e))
+        
+        return redirect('partners:list', project_id=project.id)
+    
+    partners = ProjectPartner.objects.filter(project=project).select_related('partner')
+    return render(request, 'partners/create_payment.html', {
+        'project': project,
+        'partners': partners
+    })
+
+def wallets_summary(request, project_id):
+    """ملخص محافظ الشركاء"""
+    project = get_object_or_404(Project, id=project_id)
+    partners = ProjectPartner.objects.filter(project=project).select_related('partner')
+    
+    summary = {
+        'wallets_count': partners.count(),
+        'total_deposits': Voucher.objects.filter(
+            project=project, type='receipt'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00'),
+        'total_withdrawals': Voucher.objects.filter(
+            project=project, type='payment'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00'),
+    }
+    
+    summary['wallet_balance'] = summary['total_deposits'] - summary['total_withdrawals']
+    
+    for partner in partners:
+        partner.deposits = partner.get_total_receipts()
+        partner.withdrawals = partner.get_total_payments()
+        partner.net_balance = partner.wallet_balance
+    
+    context = {
+        'project': project,
+        'partners': partners,
+        'summary': summary,
+    }
+    
+    return render(request, 'partners/wallets.html', context)
+
+def partners_statement(request, project_id):
+    """كشف حساب الشركاء"""
+    project = get_object_or_404(Project, id=project_id)
+    partners = ProjectPartner.objects.filter(project=project).select_related('partner')
+    
+    statements = []
+    for partner in partners:
+        vouchers = Voucher.objects.filter(
+            project_partner=partner
+        ).order_by('date', 'created_at')
+        
+        balance = Decimal('0.00')
+        transactions = []
+        
+        for voucher in vouchers:
+            if voucher.type == 'receipt':
+                balance += voucher.amount
+                trans_type = 'إيداع'
+            else:
+                balance -= voucher.amount
+                trans_type = 'سحب'
+            
+            transactions.append({
+                'date': voucher.date,
+                'ref_no': voucher.ref_no,
+                'type': trans_type,
+                'amount': voucher.amount,
+                'balance': balance,
+                'description': voucher.description
+            })
+        
+        statements.append({
+            'partner': partner,
+            'transactions': transactions,
+            'final_balance': balance
+        })
+    
+    context = {
+        'project': project,
+        'statements': statements,
+    }
+    
+    return render(request, 'partners/statement.html', context)

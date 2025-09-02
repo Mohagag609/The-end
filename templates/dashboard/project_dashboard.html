@@ -1,0 +1,419 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{{ project.name }} - لوحة التحكم{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="{% url 'dashboard:home' %}" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">{{ project.name }}</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Project Header -->
+        <div class="bg-white shadow rounded-lg mb-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ project.name }}</h1>
+                        <p class="text-sm text-gray-500 mt-1">
+                            كود: {{ project.code }} | 
+                            الحالة: 
+                            {% if project.status == 'open' %}
+                            <span class="text-green-600">نشط</span>
+                            {% else %}
+                            <span class="text-gray-600">مغلق</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="flex space-x-reverse space-x-2">
+                        <a href="{% url 'reports:index' project.id %}" 
+                           class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <i class="fas fa-chart-bar ml-2"></i>
+                            التقارير
+                        </a>
+                        <a href="{% url 'dashboard:kpis' %}?project={{ project.id }}" 
+                           class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            <i class="fas fa-chart-line ml-2"></i>
+                            المؤشرات
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- KPI Cards -->
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6">
+            <!-- Total Cost -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-md bg-red-100 p-3">
+                                <i class="fas fa-money-bill-wave text-red-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">
+                                    إجمالي التكلفة
+                                </dt>
+                                <dd class="text-lg font-bold text-gray-900">
+                                    {{ stats.total_cost|floatformat:2|intcomma }} ج.م
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Wallet Balance -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-md bg-green-100 p-3">
+                                <i class="fas fa-wallet text-green-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">
+                                    رصيد المحافظ
+                                </dt>
+                                <dd class="text-lg font-bold text-gray-900">
+                                    {{ stats.wallet_balance|floatformat:2|intcomma }} ج.م
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Total Purchases -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-md bg-blue-100 p-3">
+                                <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">
+                                    المشتريات
+                                </dt>
+                                <dd class="text-lg font-bold text-gray-900">
+                                    {{ stats.total_purchases|floatformat:2|intcomma }} ج.م
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Treasury Balance -->
+            <div class="bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="rounded-md bg-yellow-100 p-3">
+                                <i class="fas fa-coins text-yellow-600 text-xl"></i>
+                            </div>
+                        </div>
+                        <div class="mr-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">
+                                    رصيد الخزينة
+                                </dt>
+                                <dd class="text-lg font-bold text-gray-900">
+                                    {{ stats.treasury_balance|floatformat:2|intcomma }} ج.م
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Partners Section -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">
+                            <i class="fas fa-users ml-2 text-gray-400"></i>
+                            الشركاء والمحافظ
+                        </h2>
+                        <div class="flex space-x-reverse space-x-2">
+                            <button onclick="showAddPartnerModal()" 
+                                    class="text-sm text-primary-600 hover:text-primary-900">
+                                <i class="fas fa-plus ml-1"></i>
+                                إضافة شريك
+                            </button>
+                            <a href="{% url 'partners:list' project.id %}" 
+                               class="text-sm text-gray-600 hover:text-gray-900">
+                                عرض الكل
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4">
+                    {% if partners %}
+                    <div class="space-y-3">
+                        {% for partner in partners %}
+                        <div class="flex items-center justify-between py-2">
+                            <div class="flex items-center">
+                                <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center ml-3">
+                                    <span class="text-sm font-medium text-gray-600">
+                                        {{ partner.partner.name|slice:":1" }}
+                                    </span>
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">{{ partner.partner.name }}</p>
+                                    <p class="text-xs text-gray-500">الحصة: {{ partner.share_pct }}%</p>
+                                </div>
+                            </div>
+                            <div class="text-left">
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ partner.wallet_balance|floatformat:2|intcomma }} ج.م
+                                </p>
+                                <div class="flex space-x-reverse space-x-2 mt-1">
+                                    <button onclick="createReceipt({{ partner.partner.id }})" 
+                                            class="text-xs text-green-600 hover:text-green-900">
+                                        قبض
+                                    </button>
+                                    <button onclick="createPayment({{ partner.partner.id }})" 
+                                            class="text-xs text-red-600 hover:text-red-900">
+                                        صرف
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500 text-center py-4">لا يوجد شركاء بعد</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Stages Section -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-lg font-medium text-gray-900">
+                            <i class="fas fa-tasks ml-2 text-gray-400"></i>
+                            المراحل
+                        </h2>
+                        <div class="flex space-x-reverse space-x-2">
+                            <button onclick="showCreateStageModal()" 
+                                    class="text-sm text-primary-600 hover:text-primary-900">
+                                <i class="fas fa-plus ml-1"></i>
+                                إضافة مرحلة
+                            </button>
+                            <a href="{% url 'projects:stages' project.id %}" 
+                               class="text-sm text-gray-600 hover:text-gray-900">
+                                عرض الكل
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4">
+                    {% if stages %}
+                    <div class="space-y-3">
+                        {% for stage in stages %}
+                        <div class="border rounded-lg p-3 hover:bg-gray-50">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-sm font-medium text-gray-900">{{ stage.name }}</h3>
+                                {% if stage.is_over %}
+                                <span class="text-xs text-red-600">
+                                    <i class="fas fa-exclamation-triangle ml-1"></i>
+                                    تجاوز الميزانية
+                                </span>
+                                {% endif %}
+                            </div>
+                            <div class="grid grid-cols-3 gap-2 text-xs">
+                                <div>
+                                    <span class="text-gray-500">الميزانية:</span>
+                                    <span class="font-medium">{{ stage.budget|floatformat:0|intcomma }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">التكلفة:</span>
+                                    <span class="font-medium">{{ stage.total_cost|floatformat:0|intcomma }}</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Delta:</span>
+                                    <span class="font-medium text-primary-600">{{ stage.delta|floatformat:0|intcomma }}</span>
+                                </div>
+                            </div>
+                            {% if stage.delta > 0 %}
+                            <div class="mt-2">
+                                <a href="{% url 'allocations:allocate' project.id stage.id %}" 
+                                   class="text-xs text-primary-600 hover:text-primary-900">
+                                    <i class="fas fa-share-alt ml-1"></i>
+                                    توزيع Delta
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500 text-center py-4">لا توجد مراحل بعد</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Expense Section -->
+        <div class="bg-white shadow rounded-lg mt-6">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-medium text-gray-900">
+                    <i class="fas fa-bolt ml-2 text-yellow-500"></i>
+                    مصروف سريع
+                </h2>
+            </div>
+            <div class="px-6 py-4">
+                <form method="POST" action="{% url 'expenses:quick' project.id %}" 
+                      hx-post="{% url 'expenses:quick' project.id %}"
+                      hx-target="#quick-expense-result"
+                      hx-swap="beforeend"
+                      class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    {% csrf_token %}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">المرحلة</label>
+                        <select name="stage_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm">
+                            <option value="">بدون مرحلة</option>
+                            {% for stage in stages %}
+                            <option value="{{ stage.id }}">{{ stage.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">المبلغ</label>
+                        <input type="number" name="amount" step="0.01" required
+                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                               placeholder="0.00">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">البيان</label>
+                        <input type="text" name="description" required
+                               class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring-primary-500 sm:text-sm"
+                               placeholder="وصف المصروف">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" 
+                                class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                            <i class="fas fa-plus ml-2"></i>
+                            إضافة
+                            <span class="htmx-indicator mr-2">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+                <div id="quick-expense-result" class="mt-4"></div>
+            </div>
+        </div>
+        
+        <!-- Recent Transactions -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            <!-- Recent Vouchers -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">
+                        <i class="fas fa-receipt ml-2 text-gray-400"></i>
+                        آخر السندات
+                    </h2>
+                </div>
+                <div class="px-6 py-4">
+                    {% if recent_vouchers %}
+                    <div class="space-y-2">
+                        {% for voucher in recent_vouchers|slice:":5" %}
+                        <div class="flex items-center justify-between py-2 border-b last:border-0">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">
+                                    {% if voucher.type == 'receipt' %}
+                                    <span class="text-green-600">قبض</span>
+                                    {% else %}
+                                    <span class="text-red-600">صرف</span>
+                                    {% endif %}
+                                    - {{ voucher.partner.name }}
+                                </p>
+                                <p class="text-xs text-gray-500">{{ voucher.date }} | {{ voucher.ref_no }}</p>
+                            </div>
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ voucher.amount|floatformat:2|intcomma }} ج.م
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500 text-center py-4">لا توجد سندات</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Recent Expenses -->
+            <div class="bg-white shadow rounded-lg">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-medium text-gray-900">
+                        <i class="fas fa-money-bill-wave ml-2 text-gray-400"></i>
+                        آخر المصروفات
+                    </h2>
+                </div>
+                <div class="px-6 py-4">
+                    {% if recent_expenses %}
+                    <div class="space-y-2">
+                        {% for expense in recent_expenses|slice:":5" %}
+                        <div class="flex items-center justify-between py-2 border-b last:border-0">
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">{{ expense.description|truncatechars:30 }}</p>
+                                <p class="text-xs text-gray-500">
+                                    {{ expense.date }} 
+                                    {% if expense.stage %}| {{ expense.stage.name }}{% endif %}
+                                </p>
+                            </div>
+                            <div class="text-sm font-medium text-gray-900">
+                                {{ expense.amount|floatformat:2|intcomma }} ج.م
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-sm text-gray-500 text-center py-4">لا توجد مصروفات</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showAddPartnerModal() {
+        // TODO: Implement modal
+        window.location.href = "{% url 'partners:add' project.id %}";
+    }
+    
+    function showCreateStageModal() {
+        // TODO: Implement modal
+        window.location.href = "{% url 'projects:create_stage' project.id %}";
+    }
+    
+    function createReceipt(partnerId) {
+        window.location.href = "{% url 'partners:create_receipt' project.id %}?partner=" + partnerId;
+    }
+    
+    function createPayment(partnerId) {
+        window.location.href = "{% url 'partners:create_payment' project.id %}?partner=" + partnerId;
+    }
+</script>
+{% endblock %}
