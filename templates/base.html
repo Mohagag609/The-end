@@ -111,7 +111,7 @@
                     <!-- Desktop Navigation -->
                     <div class="hidden sm:mr-6 sm:flex sm:space-x-reverse sm:space-x-8">
                         {% if project %}
-                        <a href="{% url 'projects:detail' project.id %}" 
+                        <a href="#" 
                            class="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600">
                             <i class="fas fa-project-diagram ml-1"></i>
                             {{ project.name }}
@@ -160,7 +160,7 @@
              class="sm:hidden" x-transition>
             <div class="pt-2 pb-3 space-y-1">
                 {% if project %}
-                <a href="{% url 'projects:detail' project.id %}" 
+                <a href="#" 
                    class="block pr-4 pl-3 py-2 text-base font-medium text-gray-700 hover:text-primary-600 hover:bg-gray-50">
                     <i class="fas fa-project-diagram ml-2"></i>
                     {{ project.name }}

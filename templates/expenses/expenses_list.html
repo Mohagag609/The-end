@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}المصروفات{% endblock %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-money-bill-wave ml-2"></i>
+            المصروفات
+        </h1>
+        <div class="mb-4">
+            <a href="/project/{{ project.id }}/expenses/create/" class="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700">
+                <i class="fas fa-plus ml-2"></i>
+                إضافة مصروف
+            </a>
+        </div>
+        {% if expenses %}
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">التاريخ</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">الوصف</th>
+                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">المبلغ</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for expense in expenses %}
+                    <tr>
+                        <td class="px-6 py-4">{{ expense.date }}</td>
+                        <td class="px-6 py-4">{{ expense.description }}</td>
+                        <td class="px-6 py-4">{{ expense.amount }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-8">لا توجد مصروفات حتى الآن</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

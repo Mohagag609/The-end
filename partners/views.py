@@ -57,7 +57,7 @@ def partners_list(request, project_id):
         'total_balance': sum(pp.balance for pp in project_partners),
     }
     
-    return render(request, 'partners/partners_list.html', context)
+    return render(request, 'partners/list_simple.html', context)
 
 def add_partner(request, project_id):
     """إضافة شريك جديد"""
