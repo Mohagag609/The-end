@@ -516,34 +516,38 @@ def new_purchase(project_id):
                     tax=Decimal('0')
                 )
                 db.session.add(invoice_item)
-            
-            # إنشاء حركة مخزن (دخول)
-            stock_move = StockMove(
-                project_id=project_id,
-                warehouse_id=warehouse_id,
-                item_id=item_ids[i],
-                qty_in=qty,
-                qty_out=Decimal('0'),
-                unit_cost=cost,
-                amount=line_total,
-                ref_type='PI',
-                ref_id=invoice.id,
-                move_date=invoice_date
-            )
-            db.session.add(stock_move)
-            
-            # تحديث التكلفة القياسية للصنف
-            item = Item.query.get(item_ids[i])
-            if item:
-                item.std_cost = cost
-            
-            total += line_total
-    
-    invoice.total = total
-    db.session.commit()
-    
-    flash('تم إنشاء فاتورة الشراء بنجاح', 'success')
-    return redirect(url_for('purchases', project_id=project_id))
+                
+                # إنشاء حركة مخزن (دخول)
+                stock_move = StockMove(
+                    project_id=project_id,
+                    warehouse_id=warehouse_id,
+                    item_id=item_ids[i],
+                    qty_in=qty,
+                    qty_out=Decimal('0'),
+                    unit_cost=price,
+                    amount=line_total,
+                    ref_type='PI',
+                    ref_id=invoice.id,
+                    move_date=invoice_date
+                )
+                db.session.add(stock_move)
+                
+                # تحديث التكلفة القياسية للصنف
+                item = Item.query.get(item_ids[i])
+                if item:
+                    item.std_cost = price
+                
+                total += line_total
+        
+        invoice.total = total
+        db.session.commit()
+        
+        flash('تم إنشاء فاتورة الشراء بنجاح', 'success')
+        return redirect(url_for('purchases', project_id=project_id))
+    except Exception as e:
+        db.session.rollback()
+        flash(f'خطأ في إنشاء الفاتورة: {str(e)}', 'error')
+        return redirect(url_for('purchases', project_id=project_id))
 
 @app.route('/project/<int:project_id>/stock/issue', methods=['POST'])
 def stock_issue(project_id):
