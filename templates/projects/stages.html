@@ -1,0 +1,121 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}المراحل - {{ project.name }}{% endblock %}
+
+{% block breadcrumb %}
+<nav class="bg-white border-b px-4 py-3">
+    <ol class="max-w-7xl mx-auto flex space-x-reverse space-x-4 text-sm">
+        <li><a href="{% url 'dashboard:home' %}" class="text-gray-500 hover:text-gray-700">الرئيسية</a></li>
+        <li class="text-gray-500">/</li>
+        <li><a href="{% url 'dashboard:project_dashboard' project.id %}" class="text-gray-500 hover:text-gray-700">{{ project.name }}</a></li>
+        <li class="text-gray-500">/</li>
+        <li class="text-gray-900 font-medium">المراحل</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <!-- Header -->
+        <div class="md:flex md:items-center md:justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">
+                <i class="fas fa-tasks ml-2"></i>
+                مراحل المشروع
+            </h1>
+            <div class="mt-4 flex md:mt-0 md:mr-4">
+                <a href="{% url 'projects:create_stage' project.id %}" 
+                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                    <i class="fas fa-plus ml-2"></i>
+                    إضافة مرحلة
+                </a>
+            </div>
+        </div>
+        
+        <!-- Stages Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for stage in stages %}
+            <div class="bg-white rounded-lg shadow hover:shadow-lg transition-shadow">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">{{ stage.name }}</h3>
+                        {% if stage.status == 'active' %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                            نشط
+                        </span>
+                        {% elif stage.status == 'completed' %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                            مكتمل
+                        </span>
+                        {% else %}
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                            معلق
+                        </span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <p class="text-sm text-gray-500">الميزانية</p>
+                            <p class="text-lg font-semibold text-gray-900">
+                                {{ stage.budget|floatformat:2|intcomma }} ج.م
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">التكلفة الفعلية</p>
+                            <p class="text-lg font-semibold {% if stage.is_over %}text-red-600{% else %}text-gray-900{% endif %}">
+                                {{ stage.total_cost|floatformat:2|intcomma }} ج.م
+                            </p>
+                        </div>
+                        
+                        <div>
+                            <p class="text-sm text-gray-500">المبلغ الموزع</p>
+                            <p class="text-lg font-semibold text-gray-900">
+                                {{ stage.allocated|floatformat:2|intcomma }} ج.م
+                            </p>
+                        </div>
+                        
+                        {% if stage.delta > 0 %}
+                        <div class="pt-3 border-t">
+                            <p class="text-sm text-gray-500">Delta (غير موزع)</p>
+                            <p class="text-lg font-bold text-primary-600">
+                                {{ stage.delta|floatformat:2|intcomma }} ج.م
+                            </p>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mt-6 flex space-x-reverse space-x-2">
+                        <a href="{% url 'projects:stage_detail' project.id stage.id %}" 
+                           class="flex-1 text-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                            التفاصيل
+                        </a>
+                        {% if stage.delta > 0 %}
+                        <a href="{% url 'allocations:allocate' project.id stage.id %}" 
+                           class="flex-1 text-center px-3 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                            توزيع Delta
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full">
+                <div class="text-center py-12 bg-white rounded-lg shadow">
+                    <i class="fas fa-tasks text-6xl text-gray-300 mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">لا توجد مراحل</h3>
+                    <p class="text-gray-500 mb-4">ابدأ بإنشاء أول مرحلة للمشروع</p>
+                    <a href="{% url 'projects:create_stage' project.id %}" 
+                       class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                        <i class="fas fa-plus ml-2"></i>
+                        إنشاء مرحلة
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
