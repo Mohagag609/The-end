@@ -70,7 +70,146 @@ def items_list(request):
         'selected_category': category_id,
     }
     
+    # حساب الكميات لكل صنف
+    from django.db.models import Q
+    for item in items:
+        # الكمية الإجمالية في جميع المخازن
+        stock_in = StockMove.objects.filter(
+            project=project,
+            item=item,
+            qty_in__gt=0
+        ).aggregate(total=Sum('qty_in'))['total'] or Decimal('0')
+        
+        stock_out = StockMove.objects.filter(
+            project=project,
+            item=item,
+            qty_out__gt=0
+        ).aggregate(total=Sum('qty_out'))['total'] or Decimal('0')
+        
+        item.total_qty = stock_in - stock_out
+        item.total_value = item.total_qty * item.std_cost
+        
+        # حالة المخزون
+        if item.total_qty <= 0:
+            item.stock_status = 'out'
+        elif item.total_qty <= item.min_qty:
+            item.stock_status = 'low'
+        else:
+            item.stock_status = 'available'
+        
+        # توزيع المخزون على المخازن
+        item.warehouse_stock = []
+        warehouses = Warehouse.objects.filter(project=project, is_active=True)
+        for warehouse in warehouses:
+            w_in = StockMove.objects.filter(
+                project=project,
+                warehouse=warehouse,
+                item=item,
+                qty_in__gt=0
+            ).aggregate(total=Sum('qty_in'))['total'] or Decimal('0')
+            
+            w_out = StockMove.objects.filter(
+                project=project,
+                warehouse=warehouse,
+                item=item,
+                qty_out__gt=0
+            ).aggregate(total=Sum('qty_out'))['total'] or Decimal('0')
+            
+            qty = w_in - w_out
+            if qty > 0:
+                item.warehouse_stock.append({
+                    'warehouse': warehouse.name,
+                    'qty': qty
+                })
+    
+    # الإحصائيات
+    totals = {
+        'items_count': items.count(),
+        'total_value': sum(item.total_value for item in items),
+        'low_stock_count': sum(1 for item in items if item.stock_status == 'low'),
+        'out_of_stock_count': sum(1 for item in items if item.stock_status == 'out'),
+    }
+    
+    # الفئات والمخازن
+    categories = ItemCategory.objects.all()
+    warehouses = Warehouse.objects.filter(project=project, is_active=True)
+    
+    context = {
+        'project': project,
+        'items': items,
+        'totals': totals,
+        'categories': categories,
+        'warehouses': warehouses,
+    }
+    
     return render(request, 'inventory/items.html', context)
+
+def add_item(request, project_id):
+    """إضافة صنف جديد"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        sku = request.POST.get('sku')
+        category_id = request.POST.get('category')
+        uom = request.POST.get('uom', 'piece')
+        std_cost = Decimal(request.POST.get('std_cost', '0'))
+        min_qty = Decimal(request.POST.get('min_qty', '0'))
+        max_qty = Decimal(request.POST.get('max_qty', '0'))
+        
+        category = get_object_or_404(ItemCategory, id=category_id)
+        
+        item = Item.objects.create(
+            name=name,
+            sku=sku,
+            category=category,
+            uom=uom,
+            std_cost=std_cost,
+            min_qty=min_qty,
+            max_qty=max_qty
+        )
+        
+        messages.success(request, f'تم إضافة الصنف "{name}" بنجاح')
+        return redirect('inventory:items', project_id=project.id)
+    
+    return redirect('inventory:items', project_id=project.id)
+
+def item_movements(request, project_id, item_id):
+    """حركات صنف معين"""
+    project = get_object_or_404(Project, id=project_id)
+    item = get_object_or_404(Item, id=item_id)
+    
+    movements = StockMove.objects.filter(
+        project=project,
+        item=item
+    ).select_related('warehouse', 'stage').order_by('-move_date')
+    
+    context = {
+        'project': project,
+        'item': item,
+        'movements': movements,
+    }
+    
+    return render(request, 'inventory/item_movements.html', context)
+
+def receive_stock(request, project_id):
+    """استلام مخزون"""
+    project = get_object_or_404(Project, id=project_id)
+    
+    if request.method == 'POST':
+        # معالجة الاستلام
+        pass
+    
+    warehouses = Warehouse.objects.filter(project=project, is_active=True)
+    items = Item.objects.filter(is_active=True)
+    
+    context = {
+        'project': project,
+        'warehouses': warehouses,
+        'items': items,
+    }
+    
+    return render(request, 'inventory/receive.html', context)
 
 def issue_stock(request, project_id):
     """صرف مواد للمشروع"""

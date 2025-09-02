@@ -167,30 +167,75 @@ def wallets_summary(request, project_id):
     project = get_object_or_404(Project, id=project_id)
     partners = ProjectPartner.objects.filter(project=project).select_related('partner')
     
-    summary = {
-        'wallets_count': partners.count(),
-        'total_deposits': Voucher.objects.filter(
-            project=project, type='receipt'
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00'),
-        'total_withdrawals': Voucher.objects.filter(
-            project=project, type='payment'
-        ).aggregate(total=Sum('amount'))['total'] or Decimal('0.00'),
+    # حساب الإجماليات
+    totals = {
+        'balance': Decimal('0'),
+        'deposits': Decimal('0'),
+        'withdrawals': Decimal('0'),
+        'available': Decimal('0'),
     }
     
-    summary['wallet_balance'] = summary['total_deposits'] - summary['total_withdrawals']
-    
+    wallets = []
     for partner in partners:
-        partner.deposits = partner.get_total_receipts()
-        partner.withdrawals = partner.get_total_payments()
-        partner.net_balance = partner.wallet_balance
+        balance = partner.wallet_balance
+        deposits = partner.get_total_receipts()
+        withdrawals = partner.get_total_payments()
+        credit_limit = partner.credit_limit
+        available = balance + credit_limit
+        
+        # الأولوية
+        priority_obj = WalletPriority.objects.filter(project_partner=partner).first()
+        priority = priority_obj.priority if priority_obj else 3
+        
+        wallets.append({
+            'partner': partner,
+            'balance': balance,
+            'deposits': deposits,
+            'withdrawals': withdrawals,
+            'credit_limit': credit_limit,
+            'available': available,
+            'priority': priority,
+        })
+        
+        totals['balance'] += balance
+        totals['deposits'] += deposits
+        totals['withdrawals'] += withdrawals
+        totals['available'] += available
+    
+    # آخر المعاملات
+    recent_transactions = Voucher.objects.filter(
+        project=project
+    ).select_related('partner').order_by('-date')[:10]
     
     context = {
         'project': project,
-        'partners': partners,
-        'summary': summary,
+        'wallets': wallets,
+        'totals': totals,
+        'recent_transactions': recent_transactions,
     }
     
     return render(request, 'partners/wallets.html', context)
+
+def wallet_statement(request, project_id, partner_id):
+    """كشف حساب محفظة شريك"""
+    project = get_object_or_404(Project, id=project_id)
+    partner = get_object_or_404(Partner, id=partner_id)
+    project_partner = get_object_or_404(ProjectPartner, project=project, partner=partner)
+    
+    # المعاملات
+    transactions = Voucher.objects.filter(
+        project=project,
+        partner=partner
+    ).order_by('-date')
+    
+    context = {
+        'project': project,
+        'partner': partner,
+        'project_partner': project_partner,
+        'transactions': transactions,
+    }
+    
+    return render(request, 'partners/wallet_statement.html', context)
 
 def partners_statement(request, project_id):
     """كشف حساب الشركاء"""

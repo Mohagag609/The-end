@@ -9,5 +9,6 @@ urlpatterns = [
     path('<int:project_id>/voucher/receipt/', views.create_receipt, name='create_receipt'),
     path('<int:project_id>/voucher/payment/', views.create_payment, name='create_payment'),
     path('<int:project_id>/wallets/', views.wallets_summary, name='wallets'),
+    path('<int:project_id>/wallet/<int:partner_id>/', views.wallet_statement, name='wallet_statement'),
     path('<int:project_id>/statement/', views.partners_statement, name='statement'),
 ]
