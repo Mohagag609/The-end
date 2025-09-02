@@ -68,6 +68,71 @@ def partners_report(request, project_id):
     
     return render(request, 'reports/partners.html', context)
 
+def stages_report(request, project_id):
+    """تقرير المراحل"""
+    project = get_object_or_404(Project, id=project_id)
+    stages = Stage.objects.filter(project=project)
+    
+    stages_data = []
+    totals = {
+        'budget': Decimal('0'),
+        'material_cost': Decimal('0'),
+        'labor_cost': Decimal('0'),
+        'other_cost': Decimal('0'),
+        'cost': Decimal('0'),
+        'variance': Decimal('0'),
+        'completion_pct': 0,
+        'cost_pct': 0,
+    }
+    
+    for stage in stages:
+        # حساب التكاليف حسب الفئة
+        material_cost = Expense.objects.filter(
+            project=project, stage=stage, category='materials'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        labor_cost = Expense.objects.filter(
+            project=project, stage=stage, category='labor'
+        ).aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        
+        other_cost = Expense.objects.filter(
+            project=project, stage=stage
+        ).exclude(category__in=['materials', 'labor']).aggregate(
+            total=Sum('amount'))['total'] or Decimal('0')
+        
+        total_cost = stage.get_total_cost()
+        variance = stage.budget - total_cost if stage.budget else -total_cost
+        cost_pct = (total_cost / stage.budget * 100) if stage.budget > 0 else 0
+        
+        stages_data.append({
+            'name': stage.name,
+            'budget': stage.budget,
+            'material_cost': material_cost,
+            'labor_cost': labor_cost,
+            'other_cost': other_cost,
+            'total_cost': total_cost,
+            'variance': variance,
+            'cost_pct': float(cost_pct),
+        })
+        
+        totals['budget'] += stage.budget if stage.budget else Decimal('0')
+        totals['material_cost'] += material_cost
+        totals['labor_cost'] += labor_cost
+        totals['other_cost'] += other_cost
+        totals['cost'] += total_cost
+    
+    totals['variance'] = totals['budget'] - totals['cost']
+    totals['cost_pct'] = float((totals['cost'] / totals['budget'] * 100) if totals['budget'] > 0 else 0)
+    totals['completion_pct'] = 65.0  # مثال - يمكن حسابها بناءً على معايير أخرى
+    
+    context = {
+        'project': project,
+        'stages_data': stages_data,
+        'totals': totals,
+    }
+    
+    return render(request, 'reports/stages.html', context)
+
 def suppliers_report(request, project_id=None):
     """تقرير كشف حساب الموردين"""
     project = None

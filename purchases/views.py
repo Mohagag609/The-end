@@ -67,6 +67,7 @@ def create_purchase(request, project_id):
         supplier_id = request.POST.get('supplier_id')
         invoice_no = request.POST.get('invoice_no')
         date = request.POST.get('date', datetime.now().date())
+        notes = request.POST.get('notes', '')
         
         supplier = get_object_or_404(Supplier, id=supplier_id)
         
@@ -85,8 +86,14 @@ def create_purchase(request, project_id):
             supplier=supplier,
             invoice_no=invoice_no,
             date=date,
+            notes=notes,
             status='draft'
         )
+        
+        # Handle attachment
+        if request.FILES.get('attachment'):
+            invoice.attachment = request.FILES['attachment']
+            invoice.save()
         
         # إضافة البنود
         item_ids = request.POST.getlist('item_id[]')
@@ -132,6 +139,7 @@ def create_purchase(request, project_id):
         'project': project,
         'suppliers': suppliers,
         'items': items,
+        'today': datetime.now().date()
     }
     
     return render(request, 'purchases/create.html', context)

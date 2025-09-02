@@ -79,6 +79,7 @@ def create_receipt(request, project_id):
         amount = Decimal(request.POST.get('amount', '0'))
         date = request.POST.get('date', datetime.now().date())
         description = request.POST.get('description', '')
+        notes = request.POST.get('notes', '')
         
         project_partner = get_object_or_404(
             ProjectPartner, 
@@ -93,17 +94,25 @@ def create_receipt(request, project_id):
             project_partner=project_partner,
             amount=amount,
             date=date,
-            description=description
+            description=description,
+            notes=notes
         )
+        
+        # Handle attachment
+        if request.FILES.get('attachment'):
+            voucher.attachment = request.FILES['attachment']
+            voucher.save()
         
         messages.success(request, f'تم إنشاء سند القبض رقم {voucher.ref_no}')
         return redirect('partners:list', project_id=project.id)
     
     partners = ProjectPartner.objects.filter(project=project).select_related('partner')
-    return render(request, 'partners/create_receipt.html', {
+    context = {
         'project': project,
-        'partners': partners
-    })
+        'partners': partners,
+        'today': datetime.now().date()
+    }
+    return render(request, 'partners/create_receipt.html', context)
 
 def create_payment(request, project_id):
     """إنشاء سند صرف"""
@@ -114,6 +123,7 @@ def create_payment(request, project_id):
         amount = Decimal(request.POST.get('amount', '0'))
         date = request.POST.get('date', datetime.now().date())
         description = request.POST.get('description', '')
+        notes = request.POST.get('notes', '')
         
         project_partner = get_object_or_404(
             ProjectPartner, 
@@ -129,8 +139,15 @@ def create_payment(request, project_id):
                 project_partner=project_partner,
                 amount=amount,
                 date=date,
-                description=description
+                description=description,
+                notes=notes
             )
+            
+            # Handle attachment
+            if request.FILES.get('attachment'):
+                voucher.attachment = request.FILES['attachment']
+                voucher.save()
+            
             messages.success(request, f'تم إنشاء سند الصرف رقم {voucher.ref_no}')
         except Exception as e:
             messages.error(request, str(e))
@@ -138,10 +155,12 @@ def create_payment(request, project_id):
         return redirect('partners:list', project_id=project.id)
     
     partners = ProjectPartner.objects.filter(project=project).select_related('partner')
-    return render(request, 'partners/create_payment.html', {
+    context = {
         'project': project,
-        'partners': partners
-    })
+        'partners': partners,
+        'today': datetime.now().date()
+    }
+    return render(request, 'partners/create_payment.html', context)
 
 def wallets_summary(request, project_id):
     """ملخص محافظ الشركاء"""
